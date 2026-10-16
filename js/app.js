@@ -41,7 +41,7 @@ function render() {
 function welcomeScreen() {
   return `
     <div class="hero">
-      <h2>Welcome</h2>
+      <h2>TEST</h2>
       <button class="btn-primary" onclick="newCustomerDialog()">+ Add Client</button>
     </div>`;
 }
