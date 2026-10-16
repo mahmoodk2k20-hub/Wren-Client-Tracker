@@ -29,7 +29,11 @@ function renderCustomerList() {
   const matches = allCustomers()
     .filter(c => state.filter === "All" || c.stage === state.filter)
     .filter(c => !search || [c.name, c.phone, c.email, c.address].join(" ").toLowerCase().includes(search))
-    .sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+    .sort((a, b) => {
+      // Plain character order (localeCompare put "~" before dates, so closed customers came first).
+      const keyA = sortKey(a), keyB = sortKey(b);
+      return keyA < keyB ? -1 : keyA > keyB ? 1 : 0;
+    });
 
   const header = `
     <div class="crow head">

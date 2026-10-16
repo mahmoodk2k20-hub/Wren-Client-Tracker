@@ -197,12 +197,73 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 
 
 /* ---------- Phones & small screens ---------- */
+
+/* Appointment "Sold" tick box: keep it tick-sized (inputs are full width by default). */
+.appt-row label input { width: auto; }
+
+/* Notes boxes grow to fit what's written in them (see fitHeight() in helpers.js). */
+textarea[data-note] { overflow: hidden; resize: none; }
+
+/* Tablets and phones */
 @media (max-width: 760px) {
-  .crow { grid-template-columns: 1fr 1fr; }
+  /* Customers list: each customer becomes a card —
+       Name ............. £ quote
+       ● Stage  ▬▬▬▬▬▬▬  6/15 steps
+       Badges ...... next follow-up */
   .crow.head { display: none; }
-  .crow .value { text-align: left; }
-  .appt-row { grid-template-columns: 1fr 1fr; }
+  .crow {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "who value" "stage stage" "status due";
+    gap: 6px 12px;
+  }
+  .crow > :nth-child(1) { grid-area: who; }
+  .crow > :nth-child(2) { grid-area: stage; display: flex; align-items: center; gap: 10px; }
+  .crow > :nth-child(2) .progress { flex: 1; margin-top: 0; }
+  .crow > :nth-child(3) { grid-area: status; }
+  .crow > :nth-child(4) { grid-area: due; text-align: right; }
+  .crow > :nth-child(5) { grid-area: value; }
+
+  /* Tracking appointments: name on top, then Sold / £ value / delete underneath. */
+  .appt-row {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "name name name" "sold value del";
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .appt-row > input[list]        { grid-area: name; }
+  .appt-row > label              { grid-area: sold; }
+  .appt-row > input[type=number] { grid-area: value; }
+  .appt-row > button             { grid-area: del; }
 }
-@media (max-width: 560px) {
+
+/* Phones */
+@media (max-width: 600px) {
+  /* Top bar shrinks to one row: title on the left, buttons on the right. */
+  header { flex-wrap: nowrap; gap: 8px; padding: 8px 16px; }
+  .brand { flex: 1; min-width: 0; white-space: nowrap; }
+  #dev-refresh { font-size: 16px; padding: 4px 10px; }
+  .hide-on-phone { display: none; }
+
+  /* Page buttons become a tab bar along the bottom, where your thumb is. */
+  nav {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: var(--card); border-top: 1px solid var(--border);
+  }
+  nav button { flex: 1; padding: 10px 0; font-size: 15px; }
+  main { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Bigger buttons and tick boxes, easier to hit with a thumb. */
+  .btn-small { padding: 7px 11px; font-size: 13px; }
+  .row input[type=checkbox] { width: 22px; height: 22px; }
+  .step { padding: 8px 2px; }
+  .step input { width: 20px; height: 20px; }
+  .chips button { padding: 6px 12px; font-size: 13px; }
+  .stage-buttons button { padding: 7px 12px; font-size: 13px; }
+  .appt-row label input { width: 20px; height: 20px; }
+
+  /* Weekly table: keep each day on one line. */
+  .table td, .table th { padding: 8px 5px; }
+  .table td:first-child { white-space: nowrap; }
+
   .add-task, .field-grid { grid-template-columns: 1fr; }
 }

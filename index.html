@@ -26,9 +26,9 @@
       <button data-view="customers" onclick="showPage('customers')">Customers</button>
       <button data-view="tracking"  onclick="showPage('tracking')">Tracking</button>
     </nav>
-    <button class="btn-primary" onclick="newCustomerDialog()">+ New customer</button>
+    <button class="btn-primary" onclick="newCustomerDialog()">+ New<span class="hide-on-phone"> customer</span></button>
     <!-- Only shown in Developer mode: reloads the app to pick up changes you've just pushed -->
-    <button id="dev-refresh" class="btn-small" hidden onclick="location.reload()">↻ Refresh</button>
+    <button id="dev-refresh" class="btn-small" hidden onclick="location.reload()" title="Refresh">↻<span class="hide-on-phone"> Refresh</span></button>
         <button class="btn-small" onclick="signOut()">Sign out</button>
   </header>
 

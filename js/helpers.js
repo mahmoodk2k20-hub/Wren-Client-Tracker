@@ -60,6 +60,12 @@ function deepCopy(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+// Grows a text box to fit everything written in it (so long notes aren't hidden).
+function fitHeight(textarea) {
+  textarea.style.height = "auto";
+  textarea.style.height = (textarea.scrollHeight + 2) + "px";   // +2 for the border
+}
+
 
 /* ---------- Stage pills ---------- */
 

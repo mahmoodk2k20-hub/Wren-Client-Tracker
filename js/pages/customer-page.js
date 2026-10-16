@@ -67,6 +67,7 @@ function drawCustomerPage() {
         </div>
       </div>
     </div>`;
+  document.querySelectorAll("#modal textarea[data-note]").forEach(fitHeight);
 }
 
 function stageSection(c) {
@@ -133,7 +134,7 @@ function notesSection(c) {
   const boxes = list => list.map(([key, heading]) => `
     <div class="wide">
       <label class="label">${escapeHtml(heading)}</label>
-      <textarea rows="1" data-note="${key}" oninput="saveSoon(this, setNote)" onchange="saveNow()">${escapeHtml(c.notes[key])}</textarea>
+      <textarea rows="1" data-note="${key}" oninput="fitHeight(this); saveSoon(this, setNote)" onchange="saveNow()">${escapeHtml(c.notes[key])}</textarea>
     </div>`).join("");
   return `
     <h2>Account notes</h2>
