@@ -87,6 +87,9 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 .stat b { display: block; font-size: 24px; }
 .stat span { font-size: 12px; color: var(--muted); }
 .stat.bad b { color: var(--red); }
+.stat.tappable { width: 100%; text-align: left; color: var(--text); }   /* buttons don't copy the card look by default */
+.stat.tappable span { display: block; }
+.stat.tappable small { display: block; margin-top: 2px; font-size: 11px; color: var(--accent); }
 
 
 /* ---------- Lists & task rows ---------- */
@@ -136,6 +139,19 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 .crow b { display: block; }
 .crow span, .crow small { font-size: 13px; color: var(--muted); }
 .crow .value { text-align: right; font-weight: 600; }
+
+/* Swiping a customer row (phones). The label sits just outside the row and
+   slides in with it: swipe left shows Lost on the right, swipe right shows
+   Delete on the left. .list hides anything outside it until you swipe. */
+.swipe-hint { display: none; margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+.crow { position: relative; }
+.crow[data-swipe]::before, .crow[data-swipe]::after {
+  position: absolute; top: 0; bottom: 0; width: 100vw;
+  display: flex; align-items: center; padding: 0 20px;
+  font-weight: 700; color: var(--card);   /* white on light mode, dark on dark mode */
+}
+.crow[data-swipe="lost"]::after   { content: attr(data-lost-label); left: 100%; background: var(--amber); }
+.crow[data-swipe="delete"]::before { content: "Delete"; right: 100%; justify-content: flex-end; background: var(--red); }
 
 
 /* ---------- Customer side panel & pop-ups ---------- */
@@ -228,6 +244,8 @@ textarea[data-note] { overflow: hidden; resize: none; }
   .crow > :nth-child(3) { grid-area: status; }
   .crow > :nth-child(4) { grid-area: due; text-align: right; }
   .crow > :nth-child(5) { grid-area: value; }
+  .crow { touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .swipe-hint { display: block; }
 
   /* Tracking appointments: name on top, then Sold / £ value / delete underneath. */
   .appt-row {

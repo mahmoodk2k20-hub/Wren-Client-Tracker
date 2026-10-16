@@ -18,16 +18,18 @@ function renderToday() {
 
   const openCustomers = allCustomers().filter(c => !isClosed(c));
   const noFollowUp    = openCustomers.filter(c => openTasks(c).length === 0);
-  const quotesOut     = openCustomers
-    .filter(c => QUOTE_STAGES.includes(c.stage))
-    .reduce((sum, c) => sum + (+c.value || 0), 0);
+
+  // Leads and Sales come from the Tracking page. Tapping a card switches it
+  // between today and this week (see switchPeriod below).
+  const leads = state.leadsPeriod === "day" ? dayTotals(now).leads : weekTotals(thisMonday).leads;
+  const sales = state.salesPeriod === "day" ? dayTotals(now).value : weekTotals(thisMonday).value;
 
   return `
     <div class="stats">
       ${statCard(overdue.length, "Overdue", overdue.length > 0)}
       ${statCard(dueToday.length, "Due today")}
-      ${statCard(money(quotesOut), "Quotes out (" + QUOTE_STAGES.join(" / ") + ")")}
-      ${statCard(money(weekTotals(thisMonday).value), "Sales this week")}
+      ${periodCard(leads, "Leads", "leadsPeriod")}
+      ${periodCard(money(sales), "Sales", "salesPeriod")}
     </div>
     ${taskSection("Overdue", overdue, { warn: true, hideIfEmpty: true })}
     ${taskSection("Today", dueToday, { emptyText: "Nothing due today 🎉" })}
@@ -43,6 +45,21 @@ function renderToday() {
 
 function statCard(value, label, isBad = false) {
   return `<div class="stat ${isBad ? "bad" : ""}"><b>${value}</b><span>${label}</span></div>`;
+}
+
+// A stat card you can tap to switch between "today" and "this week".
+// `setting` is the name of the state value that remembers which one is showing.
+function periodCard(value, label, setting) {
+  const period = state[setting] === "day" ? "today" : "this week";
+  return `
+    <button class="stat tappable" onclick="switchPeriod('${setting}')">
+      <b>${value}</b><span>${label} ${period}</span><small>⇄ tap for ${period === "today" ? "week" : "today"}</small>
+    </button>`;
+}
+
+function switchPeriod(setting) {
+  state[setting] = state[setting] === "day" ? "week" : "day";
+  render();
 }
 
 function taskSection(title, tasks, { warn = false, hideIfEmpty = false, emptyText = "" } = {}) {

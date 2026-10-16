@@ -29,8 +29,8 @@ const SOLD_STAGES = ["Sold", "Delivery", "Install", "Complete"];
 // Which stages mean the customer is finished (no follow-up needed).
 const CLOSED_STAGES = ["Lost", "Complete"];
 
-// Which stages count towards "Quotes out" on the Today page.
-const QUOTE_STAGES = ["Lead", "Quote"];
+// The stage a customer moves to when you swipe left on them in the Customers list.
+const SWIPE_LEFT_STAGE = "Lost";
 
 
 /* ---------- Picked when you create a customer ---------- */

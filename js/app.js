@@ -12,6 +12,8 @@ const state = {
   filter:        "All",     // Customers page stage filter
   trackDate:     today(),   // Tracking page date
   confirmDelete: false,
+  leadsPeriod:   "day",     // Today page Leads card: "day" or "week" (tap to switch)
+  salesPeriod:   "week",    // Today page Sales card: "day" or "week"
 };
 
 // Page name -> function that draws it.
