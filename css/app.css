@@ -53,6 +53,7 @@ nav button.on { background: var(--accent-soft); color: var(--accent); }
   border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: 12px;
 }
 .btn-small:hover { color: var(--text); }
+.btn-small.on { color: var(--accent); border-color: var(--accent); }
 .btn-danger { color: var(--red); border-color: var(--red); }
 .btn-close { border: 0; background: none; font-size: 26px; line-height: 1; color: var(--muted); }
 

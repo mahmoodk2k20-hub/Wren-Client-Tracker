@@ -27,6 +27,8 @@
       <button data-view="tracking"  onclick="showPage('tracking')">Tracking</button>
     </nav>
     <button class="btn-primary" onclick="newCustomerDialog()">+ New customer</button>
+    <!-- Only shown in Developer mode: reloads the app to pick up changes you've just pushed -->
+    <button id="dev-refresh" class="btn-small" hidden onclick="location.reload()">↻ Refresh</button>
         <button class="btn-small" onclick="signOut()">Sign out</button>
   </header>
 

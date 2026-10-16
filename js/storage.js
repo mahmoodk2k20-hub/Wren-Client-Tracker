@@ -14,6 +14,14 @@ let myUserId = null;
 
 const LOCAL_KEY = "hub2";
 const SEEN_KEY  = "hub2-seen";   // ids known to be online (spots deletions made on other devices)
+const DEV_KEY   = "hub2-dev";    // "on" while signed in with Developer mode (shows the Refresh button)
+
+// Ticked with the "Developer mode" button on the sign-in page, used when you sign in.
+let devModeChosen = false;
+
+function isDevMode() {
+  try { return localStorage.getItem(DEV_KEY) === "on"; } catch (e) { return false; }
+}
 
 
 /* ---------- Status line under "Client Hub" ---------- */
@@ -206,19 +214,37 @@ function signInScreen() {
         <p><button class="btn-primary" type="submit">Sign in</button></p>
       </form>
       <p id="signin-msg"></p>
+      <p style="margin-top:40px">
+        <button class="btn-small ${devModeChosen ? "on" : ""}" onclick="toggleDevModeChoice(this)">
+          ${devModeChosen ? "Developer mode ✓" : "Developer mode"}
+        </button>
+      </p>
     </div>`;
+}
+
+// Developer mode button on the sign-in page. Updates just the button, so your
+// typed email and password stay put.
+function toggleDevModeChoice(button) {
+  devModeChosen = !devModeChosen;
+  button.classList.toggle("on", devModeChosen);
+  button.textContent = devModeChosen ? "Developer mode ✓" : "Developer mode";
 }
 
 async function signIn() {
   $("#signin-msg").textContent = "Signing in…";
+  // Set before signing in, so the very first screen after sign-in already shows Refresh.
+  try { devModeChosen ? localStorage.setItem(DEV_KEY, "on") : localStorage.removeItem(DEV_KEY); } catch (e) {}
   const { error } = await supa.auth.signInWithPassword({
     email: $("#signin-email").value.trim(),
     password: $("#signin-password").value,
   });
+  if (error) try { localStorage.removeItem(DEV_KEY); } catch (e) {}
   $("#signin-msg").textContent = error ? "⚠ " + error.message : "";
 }
 
 async function signOut() {
+  devModeChosen = false;
+  try { localStorage.removeItem(DEV_KEY); } catch (e) {}   // signing out always leaves Developer mode
   await supa.auth.signOut();
   records = {};
   saveOnDevice();
