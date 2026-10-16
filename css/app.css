@@ -190,6 +190,11 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 .hero p { color: var(--muted); }
 
 
+/* ---------- Backup ---------- */
+.backup { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.backup small { font-size: 12px; color: var(--muted); }
+
+
 /* ---------- Phones & small screens ---------- */
 @media (max-width: 760px) {
   .crow { grid-template-columns: 1fr 1fr; }

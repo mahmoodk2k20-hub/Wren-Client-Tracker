@@ -16,6 +16,10 @@ function renderCustomers() {
            oninput="state.search = this.value; $('#customer-list').innerHTML = renderCustomerList()">
     <div class="chips filters">${filterButtons}</div>
     <div id="customer-list">${renderCustomerList()}</div>
+    <p class="backup">
+      <button class="btn-small" onclick="downloadBackup()">Download backup</button>
+      <small>Saves all customers and daily stats to a file. Keep it private.</small>
+    </p>
   `;
 }
 

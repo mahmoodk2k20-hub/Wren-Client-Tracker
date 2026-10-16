@@ -148,7 +148,10 @@ async function pullFromAccount() {
   saveOnDevice();
   setStatus("Synced online");
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "");
-  if (!typing) render();
+  if (!typing) {
+    render();
+    if (state.openId) drawCustomerPage();   // show the newest copy of the open customer too
+  }
 }
 
 // Watches for sign-in / sign-out (including when you come back from the email link).
@@ -167,9 +170,28 @@ function connectToAccount() {
 }
 
 // Re-sync when you come back to the tab (picks up changes made on your phone, etc.).
+// This also runs while a customer's panel is open. Otherwise a panel left open
+// on one device could save its old copy over changes made on another device.
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && authState === "signed-in" && !state.openId) pullFromAccount();
+  if (!document.hidden && authState === "signed-in") pullFromAccount();
 });
+
+
+/* ---------- Backup ----------
+   Downloads everything (customers + daily stats) as one file you keep yourself,
+   in case anything ever goes wrong with the online database.
+   ⚠ It holds customers' personal details: keep it private, and never put it
+   in this project folder (the GitHub repo is public). */
+function downloadBackup() {
+  const file = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(file);
+  link.download = "client-tracker-backup-" + today() + ".json";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
 
 
 /* ---------- Sign in / out ---------- */

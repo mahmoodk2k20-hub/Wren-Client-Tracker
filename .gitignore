@@ -1,0 +1,5 @@
+# Mac folder clutter
+.DS_Store
+
+# Backups hold customer personal data — never commit them (this repo is public)
+client-tracker-backup-*.json

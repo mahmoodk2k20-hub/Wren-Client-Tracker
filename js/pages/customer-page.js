@@ -8,12 +8,14 @@
 /* ---------- Open / close ---------- */
 
 function openCustomer(id) {
+  saveNow();   // finish saving anything typed into the previous customer first
   state.openId = id;
   state.confirmDelete = false;
   drawCustomerPage();
 }
 
 function closeCustomer() {
+  saveNow();
   state.openId = null;
   $("#modal").innerHTML = "";
   render();
@@ -40,8 +42,9 @@ function addHistory(c, text) {
    in the template below to change the order on screen. */
 
 function drawCustomerPage() {
+  saveNow();   // so the redrawn boxes show what you just typed
   const c = currentCustomer();
-  if (!c) { $("#modal").innerHTML = ""; return; }
+  if (!c) { state.openId = null; $("#modal").innerHTML = ""; return; }   // e.g. deleted on another device
 
   $("#modal").innerHTML = `
     <div class="overlay" onclick="if (event.target === this) closeCustomer()">
@@ -130,7 +133,7 @@ function notesSection(c) {
   const boxes = list => list.map(([key, heading]) => `
     <div class="wide">
       <label class="label">${escapeHtml(heading)}</label>
-      <textarea rows="1" data-note="${key}" onchange="setNote(this)">${escapeHtml(c.notes[key])}</textarea>
+      <textarea rows="1" data-note="${key}" oninput="saveSoon(this, setNote)" onchange="saveNow()">${escapeHtml(c.notes[key])}</textarea>
     </div>`).join("");
   return `
     <h2>Account notes</h2>
@@ -145,7 +148,7 @@ function detailsSection(c) {
       ? `<select data-field="${key}" onchange="setField(this)">
            ${type.map(opt => `<option ${c[key] === opt ? "selected" : ""}>${escapeHtml(opt)}</option>`).join("")}
          </select>`
-      : `<input type="${type}" data-field="${key}" value="${escapeHtml(c[key])}" onchange="setField(this)">`;
+      : `<input type="${type}" data-field="${key}" value="${escapeHtml(c[key])}" oninput="saveSoon(this, setField)" onchange="saveNow()">`;
     return `<div><label class="label">${label}</label>${input}</div>`;
   }).join("");
   return `<h2>Details</h2><div class="field-grid">${fields}</div>`;
@@ -285,6 +288,31 @@ function setStage(index) {
 
 
 /* ---------- Details & notes ---------- */
+
+/* Saving while you type.
+   Text boxes save a moment after you stop typing, and straight away if you
+   leave the box, close the panel, or switch away from the app. Before this,
+   a note only saved when you tapped out of the box, so switching apps on the
+   iPhone mid-note could lose it. */
+let pendingSave = null;   // { input, run, timer } — the box waiting to be saved
+
+function saveSoon(input, saveFunction) {
+  if (pendingSave && pendingSave.input !== input) saveNow();   // moved to another box: save the last one first
+  clearTimeout(pendingSave?.timer);
+  pendingSave = { input, run: () => saveFunction(input), timer: setTimeout(saveNow, 800) };
+}
+
+function saveNow() {
+  if (!pendingSave) return;
+  const { run, timer } = pendingSave;
+  clearTimeout(timer);
+  pendingSave = null;
+  run();
+}
+
+// Leaving the app (switching apps, locking the phone, closing the tab) saves straight away.
+document.addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
+window.addEventListener("pagehide", saveNow);
 
 function setField(input) {
   const c = currentCustomer();
