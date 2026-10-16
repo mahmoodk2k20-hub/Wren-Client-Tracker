@@ -14,6 +14,10 @@ const state = {
   confirmDelete: false,
   leadsPeriod:   "day",     // Today page Leads card: "day" or "week" (tap to switch)
   salesPeriod:   "week",    // Today page Sales card: "day" or "week"
+  recentlyDone:  {},        // tasks just ticked on Today, kept for Undo: { taskId: { customerId, before } }
+  customerView:  "list",    // Customers page: "list" or "board"
+  trackMode:     "daily",   // Tracking page: "daily", "week" or "month"
+  reviewDate:    today(),   // any date inside the week/month being reviewed
 };
 
 // Page name -> function that draws it.
@@ -69,6 +73,9 @@ document.addEventListener("visibilitychange", () => {
 
 // Opened from the iPhone Home Screen? Mark the page so app.css can fix the screen height.
 if (navigator.standalone) document.documentElement.classList.add("standalone");
+
+// Start the service worker (sw.js), which lets the app open with no signal.
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 
 loadFromDevice();
 render();

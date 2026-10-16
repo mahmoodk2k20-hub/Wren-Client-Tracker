@@ -1,6 +1,7 @@
 /* =====================================================================
-   CUSTOMERS PAGE  —  searchable list with stage, progress, sold /
-   active status, next follow-up and quote value.
+   CUSTOMERS PAGE  —  two views of your customers:
+   List  = searchable list with stage, progress, status, next follow-up, £
+   Board = a column per stage (your pipeline at a glance)
    ===================================================================== */
 
 function renderCustomers() {
@@ -11,12 +12,19 @@ function renderCustomers() {
               onclick="state.filter = this.dataset.stage; render()">${escapeHtml(name)} (${count})</button>`;
   }).join("");
 
+  const views = [["list", "List"], ["board", "Board"]].map(([view, label]) =>
+    `<button class="${state.customerView === view ? "on" : ""}" onclick="state.customerView = '${view}'; render()">${label}</button>`
+  ).join("");
+  const board = state.customerView === "board";
+
   return `
-    <input class="search" placeholder="Search name, phone, address…" value="${escapeHtml(state.search)}"
-           oninput="state.search = this.value; $('#customer-list').innerHTML = renderCustomerList()">
-    <div class="chips filters">${filterButtons}</div>
-    <p class="swipe-hint">Swipe left: move to ${escapeHtml(SWIPE_LEFT_STAGE)} · Swipe right: delete</p>
-    <div id="customer-list">${renderCustomerList()}</div>
+    <div class="view-switch">${views}</div>
+    <input class="search" placeholder="Search customers…" value="${escapeHtml(state.search)}"
+           oninput="state.search = this.value; $('#customer-list').innerHTML = ${board ? "renderBoard()" : "renderCustomerList()"}">
+    ${board ? "" : `
+      <div class="chips filters">${filterButtons}</div>
+      <p class="swipe-hint">Swipe left: move to ${escapeHtml(SWIPE_LEFT_STAGE)} · Swipe right: delete</p>`}
+    <div id="customer-list">${board ? renderBoard() : renderCustomerList()}</div>
     <p class="backup">
       <button class="btn-small" onclick="downloadBackup()">Download backup</button>
       <small>Saves all customers and daily stats to a file. Keep it private.</small>
@@ -24,12 +32,16 @@ function renderCustomers() {
   `;
 }
 
+// Customers matching the search box.
+function searchMatches() {
+  const search = state.search.toLowerCase();
+  return allCustomers().filter(c => !search || [c.name, c.phone, c.email, c.address].join(" ").toLowerCase().includes(search));
+}
+
 // The list itself (redrawn on its own while you type in the search box).
 function renderCustomerList() {
-  const search = state.search.toLowerCase();
-  const matches = allCustomers()
+  const matches = searchMatches()
     .filter(c => state.filter === "All" || c.stage === state.filter)
-    .filter(c => !search || [c.name, c.phone, c.email, c.address].join(" ").toLowerCase().includes(search))
     .sort((a, b) => {
       // Plain character order (localeCompare put "~" before dates, so closed customers came first).
       const keyA = sortKey(a), keyB = sortKey(b);
@@ -42,6 +54,31 @@ function renderCustomerList() {
     </div>`;
   const rows = matches.map(customerRow).join("") || `<div class="empty">No customers found</div>`;
   return `<div class="list">${header}${rows}</div>`;
+}
+
+// The board: one column per stage, each with its count and total £.
+// On a phone, swipe sideways to move between columns.
+function renderBoard() {
+  const matches = searchMatches();
+  const columns = STAGES.map(stage => {
+    const inStage = matches.filter(c => c.stage === stage.name).sort((a, b) => sortKey(a) < sortKey(b) ? -1 : 1);
+    const total = inStage.reduce((sum, c) => sum + (+c.value || 0), 0);
+    const cards = inStage.map(c => {
+      const next = nextTask(c);
+      return `
+        <div class="board-card" onclick="openCustomer('${c.id}')">
+          <b>${escapeHtml(c.name)}</b>
+          <span>${escapeHtml(c.room)} · ${escapeHtml(c.service)}${c.value ? " · " + money(c.value) : ""}</span>
+          <span class="due ${next && next.due < today() ? "late" : ""}">${next ? escapeHtml(next.text) + " · " + whenText(next) : "No follow-up"}</span>
+        </div>`;
+    }).join("");
+    return `
+      <div class="board-column">
+        <div class="board-head">${stagePill(stage.name)}<i>${inStage.length}</i><small>${total ? money(total) : ""}</small></div>
+        ${cards || `<div class="empty">None</div>`}
+      </div>`;
+  }).join("");
+  return `<div class="board">${columns}</div>`;
 }
 
 // Order: soonest follow-up first, then no follow-up, then closed customers last.
@@ -134,8 +171,7 @@ function swipeAction(row, id, dx) {
   const c = records[id];
   if (c && dx <= -SWIPE_DISTANCE) {
     if (c.stage !== SWIPE_LEFT_STAGE && confirm(`Move ${c.name} to ${SWIPE_LEFT_STAGE}?`)) {
-      c.stage = SWIPE_LEFT_STAGE;
-      addHistory(c, "Moved to " + SWIPE_LEFT_STAGE);
+      changeStage(c, SWIPE_LEFT_STAGE);
       saveRecord(c);
       render();
       return;

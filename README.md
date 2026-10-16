@@ -49,3 +49,21 @@ client-hub/
 ## Updating the live page
 
 Edit the files, then ask Claude: *"update my Client Hub artifact with these files"* (or attach the changed files). Your customers and stats are stored separately from the code, so updating the code never wipes them.
+
+## One-time setup: portfolio photo storage (Supabase)
+
+Portfolio photos are stored in a private Supabase Storage bucket called `portfolio`.
+Do this once in the Supabase dashboard (project `Wren_Clients_Database_1`):
+
+1. **Storage → New bucket** → name `portfolio`, leave **Public bucket OFF** → Create.
+2. **SQL Editor → New query**, paste this, and press **Run**. It lets only you (signed in)
+   see, add and delete photos in your own folder:
+
+```sql
+create policy "Portfolio: read own photos" on storage.objects for select to authenticated
+  using (bucket_id = 'portfolio' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "Portfolio: add own photos" on storage.objects for insert to authenticated
+  with check (bucket_id = 'portfolio' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "Portfolio: delete own photos" on storage.objects for delete to authenticated
+  using (bucket_id = 'portfolio' and (storage.foldername(name))[1] = auth.uid()::text);
+```

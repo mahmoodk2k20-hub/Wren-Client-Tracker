@@ -116,6 +116,7 @@ function normalise(r) {
   if (r.kind === "day") {                        // daily stats
     if (r.apps && !r.appointments) r.appointments = r.apps;
     delete r.apps;
+    r.sales = r.sales || [];                     // sales made after a follow-up
     r.appointments = (r.appointments || []).map(a => {
       if ("val" in a) { a.value = a.val; delete a.val; }
       return a;

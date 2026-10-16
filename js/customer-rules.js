@@ -18,16 +18,20 @@ function openTasks(c) {
   return c.tasks.filter(t => !t.done);
 }
 
+// Sorts tasks soonest first: by date, then by time (tasks with no time go last that day).
+function whenKey(t) { return t.due + " " + (t.time || "99:99"); }
+function bySoonest(a, b) { return whenKey(a) < whenKey(b) ? -1 : 1; }
+
 // The soonest unfinished task, or undefined.
 function nextTask(c) {
-  return openTasks(c).sort((a, b) => a.due < b.due ? -1 : 1)[0];
+  return openTasks(c).sort(bySoonest)[0];
 }
 
 // Every unfinished task across all customers, soonest first. Each task carries its customer.
 function allOpenTasks() {
   const list = [];
   allCustomers().forEach(c => openTasks(c).forEach(t => list.push({ ...t, customer: c })));
-  return list.sort((a, b) => a.due < b.due ? -1 : 1);
+  return list.sort(bySoonest);
 }
 
 

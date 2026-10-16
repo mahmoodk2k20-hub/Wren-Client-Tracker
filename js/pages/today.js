@@ -9,7 +9,13 @@ function renderToday() {
   const nextMonday = addDays(7, thisMonday);
   const weekAfter  = addDays(14, thisMonday);
 
-  const tasks = allOpenTasks();
+  // Tasks ticked in the last few seconds stay on the page, crossed out, so you can Undo.
+  const justDone = Object.entries(state.recentlyDone).flatMap(([taskId, { customerId }]) => {
+    const c = records[customerId];
+    const t = c && c.tasks.find(t => t.id === taskId);
+    return t && t.done ? [{ ...t, customer: c }] : [];
+  });
+  const tasks = allOpenTasks().concat(justDone).sort(bySoonest);
   const overdue    = tasks.filter(t => t.due < now);
   const dueToday   = tasks.filter(t => t.due === now);
   const restOfWeek = tasks.filter(t => t.due > now && t.due < nextMonday);
@@ -26,8 +32,8 @@ function renderToday() {
 
   return `
     <div class="stats">
-      ${statCard(overdue.length, "Overdue", overdue.length > 0)}
-      ${statCard(dueToday.length, "Due today")}
+      ${statCard(stillOpen(overdue), "Overdue", stillOpen(overdue) > 0)}
+      ${statCard(stillOpen(dueToday), "Due today")}
       ${periodCard(leads, "Leads", "leadsPeriod")}
       ${periodCard(money(sales), "Sales", "salesPeriod")}
     </div>
@@ -42,6 +48,11 @@ function renderToday() {
 
 
 /* ---------- Pieces of the page ---------- */
+
+// How many of these tasks aren't done (ticked ones waiting for Undo don't count).
+function stillOpen(tasks) {
+  return tasks.filter(t => !t.done).length;
+}
 
 function statCard(value, label, isBad = false) {
   return `<div class="stat ${isBad ? "bad" : ""}"><b>${value}</b><span>${label}</span></div>`;
@@ -67,7 +78,7 @@ function taskSection(title, tasks, { warn = false, hideIfEmpty = false, emptyTex
   const rows = tasks.length ? tasks.map(taskRow).join("") : `<div class="empty">${emptyText}</div>`;
   return `
     <div class="${warn ? "overdue" : ""}">
-      <h2>${title}<i>${tasks.length}</i></h2>
+      <h2>${title}<i>${stillOpen(tasks)}</i></h2>
       <div class="list">${rows}</div>
     </div>`;
 }
@@ -75,6 +86,14 @@ function taskSection(title, tasks, { warn = false, hideIfEmpty = false, emptyTex
 function taskRow(task) {
   const c = task.customer;
   const late = task.due < today();
+  if (task.done) {   // just ticked: crossed out with an Undo button for a few seconds
+    return `
+    <div class="row done">
+      <input type="checkbox" checked disabled>
+      <div class="row-main"><b>${escapeHtml(task.text)}</b><span>${escapeHtml(c.name)}</span></div>
+      <button class="btn-small" onclick="undoTask('${task.id}')">Undo</button>
+    </div>`;
+  }
   return `
     <div class="row">
       <input type="checkbox" title="Mark done" onchange="tickTask('${c.id}','${task.id}')">
@@ -82,7 +101,7 @@ function taskRow(task) {
         <b>${escapeHtml(task.text)}</b>
         <span>${escapeHtml(c.name)} · ${stagePill(c.stage)}</span>
       </div>
-      <span class="due ${late ? "late" : ""}">${formatDate(task.due)}</span>
+      <span class="due ${late ? "late" : ""}">${whenText(task)}</span>
       <button class="btn-small" title="Push to tomorrow" onclick="snoozeTask('${c.id}','${task.id}')">+1 day</button>
     </div>`;
 }
@@ -97,5 +116,6 @@ function noFollowUpSection(list) {
       </div>
       <button class="btn-small" onclick="openCustomer('${c.id}')">Add task</button>
     </div>`).join("");
-  return `<h2>Needs a follow-up<i>${list.length}</i></h2><div class="list">${rows}</div>`;
+  // An alert: every open customer should have a next step booked.
+  return `<div class="overdue"><h2>⚠ No follow-up booked<i>${list.length}</i></h2><div class="list">${rows}</div></div>`;
 }

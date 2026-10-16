@@ -29,8 +29,17 @@ const SOLD_STAGES = ["Sold", "Delivery", "Install", "Complete"];
 // Which stages mean the customer is finished (no follow-up needed).
 const CLOSED_STAGES = ["Lost", "Complete"];
 
+// The stage that means a customer was lost (used by swipe-left and the reviews).
+const LOST_STAGE = "Lost";
+
 // The stage a customer moves to when you swipe left on them in the Customers list.
-const SWIPE_LEFT_STAGE = "Lost";
+const SWIPE_LEFT_STAGE = LOST_STAGE;
+
+// The stage a customer moves to when they buy (e.g. at their design appointment).
+const SOLD_STAGE = "Sold";
+
+// The stage for customers who have a quote and haven't decided yet.
+const QUOTE_STAGE = "Quote";
 
 
 /* ---------- Picked when you create a customer ---------- */
@@ -110,5 +119,29 @@ const QUICK_TASKS = ["Follow-up call", "Send quote", "Book home survey", "Book d
 // [ "Button label", days from today ]
 const QUICK_DATES = [["Today", 0], ["Tomorrow", 1], ["3 days", 3], ["1 week", 7], ["2 weeks", 14]];
 
-// Task added automatically to every new customer.
+// Task added automatically to every new customer (when no appointment is booked).
 const FIRST_TASK = "Make first contact";
+
+// Quick tasks that tick a journey step when you complete them.
+// You can also pick a step for any task when you add it.
+const TASK_STEPS = {
+  "Send quote": "Quoted",
+};
+
+// Ticking one of these journey steps adds a task automatically:
+// "Step": ["Task", days from today]
+const AUTO_TASKS = {
+  "Quoted": ["Chase decision", 3],
+};
+
+
+/* ---------- Design appointments ----------
+   Booked in the New customer pop-up. The appointment shows on the Today page
+   on its date; ticking it asks how it went. */
+const APPOINTMENT_TASK = "Design appointment";
+
+// After the appointment (sold or not), the journey is ticked up to this step.
+const APPOINTMENT_TICKS_STEP = "Quoted";
+
+// Suggested follow-up when it didn't sell.
+const DEFAULT_FOLLOW_UP = "Chase decision";

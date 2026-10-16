@@ -64,6 +64,7 @@ function drawCustomerPage() {
         ${journeySection(c)}
         ${notesSection(c)}
         ${detailsSection(c)}
+        ${portfolioSection(c)}
         ${historySection(c)}
         <div style="margin-top:24px">
           <button class="btn-small btn-danger" onclick="deleteCustomer(this)">
@@ -74,6 +75,7 @@ function drawCustomerPage() {
     </div>`;
   document.querySelectorAll("#modal textarea[data-note]").forEach(fitHeight);
   $("#modal .drawer").scrollTop = scrollBack;
+  showPhotos();   // portfolio photos load a moment later (see portfolio.js)
 }
 
 function stageSection(c) {
@@ -84,21 +86,25 @@ function stageSection(c) {
 }
 
 function tasksSection(c) {
-  const sorted = c.tasks.slice().sort((a, b) => (a.done - b.done) || (a.due < b.due ? -1 : 1));
+  const sorted = c.tasks.slice().sort((a, b) => (a.done - b.done) || bySoonest(a, b));
   const rows = sorted.map(t => `
     <div class="row compact ${t.done ? "done" : ""}">
       <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTask('${t.id}')">
-      <div class="row-main"><b>${escapeHtml(t.text)}</b></div>
-      <span class="due ${!t.done && t.due < today() ? "late" : ""}">${formatDate(t.due)}</span>
+      <div class="row-main"><b>${escapeHtml(t.text)}</b>
+        ${t.step ? `<span>when done: ticks ${escapeHtml(t.step)}</span>` : ""}</div>
+      <span class="due ${!t.done && t.due < today() ? "late" : ""}">${whenText(t)}</span>
       <button class="btn-small" onclick="deleteTask('${t.id}')">✕</button>
     </div>`).join("");
 
+  // Tapping a quick task fills the box, and picks its journey step if it has one (TASK_STEPS).
   const taskChips = QUICK_TASKS.map(text =>
-    `<button onclick="$('#new-task').value = this.textContent; $('#new-task').focus()">${escapeHtml(text)}</button>`
+    `<button onclick="$('#new-task').value = this.textContent; $('#new-task-step').value = TASK_STEPS[this.textContent] || ''; $('#new-task').focus()">${escapeHtml(text)}</button>`
   ).join("");
   const dateChips = QUICK_DATES.map(([label, days]) =>
     `<button onclick="$('#new-task-date').value = '${addDays(days)}'">${label}</button>`
   ).join("");
+  const stepOptions = journeyFor(c).flatMap(p => p.steps)
+    .map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
 
   return `
     <h2>Follow-ups &amp; tasks</h2>
@@ -107,9 +113,17 @@ function tasksSection(c) {
     <div class="add-task">
       <input id="new-task" placeholder="What needs doing?" onkeydown="if (event.key === 'Enter') addTask()">
       <input id="new-task-date" type="date" value="${today()}">
+      <input id="new-task-time" type="time" aria-label="Time (optional)">
       <button class="btn-primary" onclick="addTask()">Add</button>
     </div>
-    <div class="chips">${dateChips}</div>`;
+    <div class="chips">${dateChips}</div>
+    <label class="label">When done, tick journey step (optional)</label>
+    <select id="new-task-step"><option value="">Nothing</option>${stepOptions}</select>`;
+}
+
+// "10:30 · Fri 16 Oct", or just the date when there's no time.
+function whenText(task) {
+  return (task.time ? task.time + " · " : "") + formatDate(task.due);
 }
 
 function journeySection(c) {
@@ -181,33 +195,43 @@ function newCustomerDialog() {
         <h1>New customer<button class="btn-close" onclick="$('#modal').innerHTML = ''">×</button></h1>
         <label class="label">Name</label>
         <input id="new-name" onkeydown="if (event.key === 'Enter') createCustomer()">
-        <label class="label">Phone</label>
-        <input id="new-phone" onkeydown="if (event.key === 'Enter') createCustomer()">
-        <div class="field-grid" style="margin:6px 0 14px">
+        <div class="field-grid" style="margin:6px 0 0">
           <div><label class="label">Room</label><select id="new-room">${options(ROOMS)}</select></div>
           <div><label class="label">Service</label><select id="new-service">${options(SERVICES)}</select></div>
+        </div>
+        <label class="label">${escapeHtml(APPOINTMENT_TASK)} (optional)</label>
+        <div class="field-grid two-up" style="margin-bottom:14px">
+          <input id="new-appt-date" type="date" aria-label="Appointment date">
+          <input id="new-appt-time" type="time" aria-label="Appointment time">
         </div>
         <button class="btn-primary" style="width:100%" onclick="createCustomer()">Create customer</button>
       </div>
     </div>`;
-  setTimeout(() => $("#new-name").focus(), 50);
+  setTimeout(() => $("#new-name")?.focus(), 50);
 }
 
 function createCustomer() {
   const name = $("#new-name").value.trim();
   if (!name) { $("#new-name").focus(); return; }
 
+  // A booked design appointment becomes the first task (it shows on Today on its date).
+  // No appointment: the usual "Make first contact" task for today.
+  const apptDate = $("#new-appt-date").value;
+  const firstTask = apptDate
+    ? { id: newId(), kind: "appointment", text: APPOINTMENT_TASK, due: apptDate, time: $("#new-appt-time").value, done: false }
+    : { id: newId(), text: FIRST_TASK, due: today(), done: false };
+
   const c = normalise({
     id:      newId(),
     name,
-    phone:   $("#new-phone").value.trim(),
     room:    $("#new-room").value,
     service: $("#new-service").value,
     stage:   STAGES[0].name,
     created: today(),
-    tasks:   [{ id: newId(), text: FIRST_TASK, due: today(), done: false }],
+    tasks:   [firstTask],
   });
   saveRecord(c);
+  addLead();   // counts as a lead on today's Tracking page
 
   state.view = "customers";
   state.filter = "All";
@@ -220,12 +244,41 @@ function createCustomer() {
 /* ---------- Tasks ---------- */
 
 // Tick a task from the Today page.
+// It stays on the page, crossed out with an Undo button, for UNDO_SECONDS.
+const UNDO_SECONDS = 5;
+
 function tickTask(customerId, taskId) {
   const c = records[customerId];
   const task = c.tasks.find(t => t.id === taskId);
+  if (task.kind === "appointment") { appointmentOutcome(customerId, taskId); return; }
+
+  const before = deepCopy(c);   // a copy to go back to if you press Undo
+  completeTask(c, task);
+  saveCustomer(c, false);
+  state.recentlyDone[taskId] = { customerId, before };
+  setTimeout(() => {
+    delete state.recentlyDone[taskId];
+    const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "");
+    if (state.view === "today" && !typing) render();
+  }, UNDO_SECONDS * 1000);
+  render();
+}
+
+// Puts the customer back exactly as they were before the tick
+// (task unticked, and any journey step or stage it moved undone too).
+function undoTask(taskId) {
+  const undo = state.recentlyDone[taskId];
+  if (!undo) return;
+  delete state.recentlyDone[taskId];
+  saveRecord(undo.before);
+  render();
+}
+
+// Marks a task done and ticks its journey step, if it has one.
+function completeTask(c, task) {
   task.done = true;
   task.doneOn = today();
-  saveCustomer(c);
+  if (task.step) tickStep(c, task.step);
 }
 
 // Push a task to tomorrow (or one day later if it's already in the future).
@@ -240,16 +293,26 @@ function addTask() {
   const c = currentCustomer();
   const text = $("#new-task").value.trim();
   if (!text) return;
-  c.tasks.push({ id: newId(), text, due: $("#new-task-date").value || today(), done: false });
+  const task = { id: newId(), text, due: $("#new-task-date").value || today(), done: false };
+  if ($("#new-task-time").value) task.time = $("#new-task-time").value;
+  if ($("#new-task-step").value) task.step = $("#new-task-step").value;
+  if (text === APPOINTMENT_TASK) task.kind = "appointment";   // asks how it went when ticked
+  c.tasks.push(task);
   saveCustomer(c);
   $("#new-task").focus();
 }
 
+// Tick or untick a task in the customer panel.
 function toggleTask(taskId) {
   const c = currentCustomer();
   const task = c.tasks.find(t => t.id === taskId);
-  task.done = !task.done;
-  task.doneOn = task.done ? today() : "";
+  if (!task.done && task.kind === "appointment") { appointmentOutcome(c.id, taskId); return; }
+  if (task.done) {
+    task.done = false;   // unticking only reopens the task
+    task.doneOn = "";
+  } else {
+    completeTask(c, task);
+  }
   saveCustomer(c);
 }
 
@@ -267,17 +330,33 @@ function toggleJourneyStep(step) {
   if (c.journey[step]) {
     delete c.journey[step];   // unticking only clears the step you tapped
   } else {
-    // Ticking a step also ticks every unticked step above it.
-    const allSteps    = journeyFor(c).flatMap(p => p.steps);
-    const upToThisOne = allSteps.slice(0, allSteps.indexOf(step) + 1);
-    const newlyTicked = upToThisOne.filter(s => !c.journey[s]);
-    newlyTicked.forEach(s => c.journey[s] = today());
-
-    const earlier = newlyTicked.length - 1;
-    addHistory(c, "✓ " + step + (earlier > 0 ? ` (+ ${earlier} earlier step${earlier > 1 ? "s" : ""})` : ""));
-    moveStageForSteps(c, newlyTicked);
+    tickStep(c, step);
   }
   saveCustomer(c);
+}
+
+// Ticks a journey step AND every unticked step above it, moves the stage on,
+// and adds any automatic tasks for those steps (AUTO_TASKS in config.js).
+// Used by the journey checkboxes, tasks with a step, and appointment results.
+function tickStep(c, step, { autoTasks = true } = {}) {
+  const allSteps = journeyFor(c).flatMap(p => p.steps);
+  if (c.journey[step] || !allSteps.includes(step)) return;   // already ticked, or hidden for this customer
+  const upToThisOne = allSteps.slice(0, allSteps.indexOf(step) + 1);
+  const newlyTicked = upToThisOne.filter(s => !c.journey[s]);
+  newlyTicked.forEach(s => c.journey[s] = today());
+
+  const earlier = newlyTicked.length - 1;
+  addHistory(c, "✓ " + step + (earlier > 0 ? ` (+ ${earlier} earlier step${earlier > 1 ? "s" : ""})` : ""));
+  moveStageForSteps(c, newlyTicked);
+  if (autoTasks) newlyTicked.forEach(s => addAutoTask(c, s));
+}
+
+// e.g. ticking "Quoted" adds "Chase decision" in 3 days, unless that task is already open.
+function addAutoTask(c, step) {
+  if (!AUTO_TASKS[step]) return;
+  const [text, days] = AUTO_TASKS[step];
+  if (openTasks(c).some(t => t.text === text)) return;
+  c.tasks.push({ id: newId(), text, due: addDays(days), done: false });
 }
 
 // Moves the stage forward to the furthest stage these steps lead to
@@ -289,18 +368,26 @@ function moveStageForSteps(c, steps) {
     .filter(Boolean)
     .sort((a, b) => names.indexOf(b) - names.indexOf(a))[0];
   if (furthest && !isClosed(c) && names.indexOf(furthest) > names.indexOf(c.stage)) {
-    c.stage = furthest;
-    addHistory(c, "Moved to " + furthest);
+    changeStage(c, furthest);
   }
 }
 
 function setStage(index) {
   const c = currentCustomer();
-  const name = STAGES[index].name;
+  changeStage(c, STAGES[index].name);
+  saveCustomer(c);
+}
+
+// Every stage change goes through here. When a customer becomes sold and the
+// sale isn't on the Tracking page yet, it asks whether to add it.
+function changeStage(c, name) {
   if (c.stage === name) return;
+  const wasSold = isSold(c);
   c.stage = name;
   addHistory(c, "Moved to " + name);
-  saveCustomer(c);
+  if (!wasSold && isSold(c) && !hasRecordedSale(c.id)) {
+    setTimeout(() => saleDialog(c.id), 0);   // after the change has been saved
+  }
 }
 
 
