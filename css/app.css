@@ -148,6 +148,9 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 .drawer h1, .dialog h1 { display: flex; justify-content: space-between; align-items: center; margin: 0 0 12px; font-size: 20px; }
 .drawer h1 small { font-size: 12px; font-weight: 400; color: var(--muted); }
 .dialog { width: min(420px, 92%); padding: 18px; background: var(--card); border-radius: 14px; }
+/* Pop-ups and the customer panel only move up and down — no sideways
+   dragging or bouncing on iPhone. touch-action: pan-y = "only vertical swipes". */
+.overlay, .drawer, .dialog { overflow-x: hidden; overscroll-behavior: none; touch-action: pan-y; }
 .dialog h1 { font-size: 18px; }
 .stage-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
 .stage-buttons button {
@@ -309,4 +312,7 @@ textarea[data-note] { overflow: hidden; resize: none; }
   .table td:first-child { white-space: nowrap; }
 
   .add-task, .field-grid { grid-template-columns: 1fr; }
+
+  /* iPhone draws date boxes wider than asked, which can push the panel sideways. */
+  input[type=date] { -webkit-appearance: none; appearance: none; min-width: 0; }
 }

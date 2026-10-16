@@ -66,14 +66,43 @@ function saveRecord(record) {
   sendToAccount(record);
 }
 
+/* Deleting.
+   The id goes on a "to delete" list saved on this device first, then the app
+   tells the database. If that fails (no signal), the id stays on the list:
+   it's retried at the next sync, and until then the sync won't bring the
+   customer back from the database. */
+const DELETED_KEY = "hub2-deleted";   // ids deleted here but not yet online
+
+function loadDeleted() {
+  try { return JSON.parse(localStorage.getItem(DELETED_KEY) || "{}"); } catch (e) { return {}; }
+}
+
+function saveDeleted(list) {
+  try { localStorage.setItem(DELETED_KEY, JSON.stringify(list)); } catch (e) {}
+}
+
 async function deleteRecord(id) {
   delete records[id];
   saveOnDevice();
-  if (authState !== "signed-in") return;
-  const { error } = await supa.from("records").delete().eq("id", id);
-  if (error) { setStatus("⚠ Not deleted online (" + error.message + ")"); return; }
+  const toDelete = loadDeleted();
+  toDelete[id] = true;
+  saveDeleted(toDelete);
+  await sendDeletes();
+}
+
+// Tells the database about every delete on the "to delete" list.
+async function sendDeletes() {
+  const ids = Object.keys(loadDeleted());
+  if (authState !== "signed-in" || ids.length === 0) return;
+  let error;
+  try { ({ error } = await supa.from("records").delete().in("id", ids)); }
+  catch (e) { error = e; }
+  if (error) { setStatus("⚠ Delete not online yet – will retry"); return; }
+
+  const toDelete = loadDeleted();   // re-read: something may have been deleted meanwhile
   const seen = loadSeen();
-  delete seen[id];
+  ids.forEach(id => { delete toDelete[id]; delete seen[id]; });
+  saveDeleted(toDelete);
   saveSeen(seen);
 }
 
@@ -124,6 +153,7 @@ function loadFromDevice() {
 // Merges the database with this device. Whichever copy changed most recently wins.
 async function pullFromAccount() {
   setStatus("Syncing…");
+  await sendDeletes();   // first, send any deletes made while there was no signal
   const { data, error } = await supa.from("records").select("id, data");
   if (error) {
     setStatus("⚠ Couldn't load online data (" + error.message + ")");
@@ -132,7 +162,9 @@ async function pullFromAccount() {
   }
 
   const onServer = {};
+  const deletedHere = loadDeleted();
   data.forEach(row => {
+    if (deletedHere[row.id]) return;   // deleted on this device – don't bring it back
     const remote = normalise(row.data);
     const local = records[row.id];
     onServer[row.id] = remote.updatedAt || 0;
@@ -168,7 +200,11 @@ function connectToAccount() {
     if (session && authState !== "signed-in") {
       myUserId = session.user.id;
       authState = "signed-in";
-      setTimeout(pullFromAccount, 0);
+      // Go straight to the Today page. Drawing it now also removes the sign-in
+      // boxes; before, the cursor stayed in the password box, so the sync below
+      // thought you were typing and never swapped the screen over.
+      state.view = "today";
+      setTimeout(() => { document.activeElement?.blur(); render(); pullFromAccount(); }, 0);
     } else if (!session) {
       authState = "signed-out";
       setStatus("Not signed in");
