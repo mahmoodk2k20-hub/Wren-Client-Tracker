@@ -46,9 +46,14 @@ function drawCustomerPage() {
   const c = currentCustomer();
   if (!c) { state.openId = null; $("#modal").innerHTML = ""; return; }   // e.g. deleted on another device
 
+  // Redrawing builds a brand-new panel, which starts at the top. Remember how far
+  // down you'd scrolled (if it's the same customer) so we can put you back there.
+  const oldPanel = $("#modal .drawer");
+  const scrollBack = oldPanel && oldPanel.dataset.id === c.id ? oldPanel.scrollTop : 0;
+
   $("#modal").innerHTML = `
     <div class="overlay" onclick="if (event.target === this) closeCustomer()">
-      <div class="drawer">
+      <div class="drawer" data-id="${escapeHtml(c.id)}">
         <h1>
           <span><span id="drawer-name">${escapeHtml(c.name)}</span><br>
             <small>${escapeHtml(c.room)} · ${escapeHtml(c.service)}</small></span>
@@ -68,6 +73,7 @@ function drawCustomerPage() {
       </div>
     </div>`;
   document.querySelectorAll("#modal textarea[data-note]").forEach(fitHeight);
+  $("#modal .drawer").scrollTop = scrollBack;
 }
 
 function stageSection(c) {
@@ -259,22 +265,32 @@ function deleteTask(taskId) {
 function toggleJourneyStep(step) {
   const c = currentCustomer();
   if (c.journey[step]) {
-    delete c.journey[step];
+    delete c.journey[step];   // unticking only clears the step you tapped
   } else {
-    c.journey[step] = today();
-    addHistory(c, "✓ " + step);
-    moveStageForStep(c, step);
+    // Ticking a step also ticks every unticked step above it.
+    const allSteps    = journeyFor(c).flatMap(p => p.steps);
+    const upToThisOne = allSteps.slice(0, allSteps.indexOf(step) + 1);
+    const newlyTicked = upToThisOne.filter(s => !c.journey[s]);
+    newlyTicked.forEach(s => c.journey[s] = today());
+
+    const earlier = newlyTicked.length - 1;
+    addHistory(c, "✓ " + step + (earlier > 0 ? ` (+ ${earlier} earlier step${earlier > 1 ? "s" : ""})` : ""));
+    moveStageForSteps(c, newlyTicked);
   }
   saveCustomer(c);
 }
 
-// Moves the stage forward if this step is listed in STEP_MOVES_STAGE (never backwards).
-function moveStageForStep(c, step) {
-  const target = STEP_MOVES_STAGE[step];
+// Moves the stage forward to the furthest stage these steps lead to
+// (see STEP_MOVES_STAGE in config.js). Never moves backwards.
+function moveStageForSteps(c, steps) {
   const names = STAGES.map(s => s.name);
-  if (target && !isClosed(c) && names.indexOf(target) > names.indexOf(c.stage)) {
-    c.stage = target;
-    addHistory(c, "Moved to " + target);
+  const furthest = steps
+    .map(s => STEP_MOVES_STAGE[s])
+    .filter(Boolean)
+    .sort((a, b) => names.indexOf(b) - names.indexOf(a))[0];
+  if (furthest && !isClosed(c) && names.indexOf(furthest) > names.indexOf(c.stage)) {
+    c.stage = furthest;
+    addHistory(c, "Moved to " + furthest);
   }
 }
 
