@@ -1,0 +1,38 @@
+/* =====================================================================
+   THEME  —  colours. Change these to restyle the whole app.
+   The first block is light mode, the other two are dark mode
+   (keep both dark blocks the same).
+   ===================================================================== */
+
+:root {
+  --bg:          #f6f5f2;   /* page background */
+  --card:        #ffffff;   /* header, cards, side panel */
+  --text:        #1f2421;   /* main text */
+  --muted:       #6b716d;   /* secondary text, labels */
+  --border:      #e3e1dc;   /* lines and outlines */
+  --accent:      #2f6f5e;   /* buttons, ticks, highlights */
+  --accent-soft: #e5f0ec;   /* light highlight background */
+  --red:         #c0392b;   /* overdue */
+  --red-soft:    #fbeae8;
+  --amber:       #9a6a12;   /* "Active" badge */
+  --amber-soft:  #fdf3df;
+  color-scheme: light;
+}
+
+/* Dark mode — follows the device setting */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141816; --card: #1e2421; --text: #ecefed; --muted: #9aa39e; --border: #2f3733;
+    --accent: #5fb59f; --accent-soft: #22332e;
+    --red: #ef7a6c; --red-soft: #3a2321; --amber: #e5b45c; --amber-soft: #3a301a;
+    color-scheme: dark;
+  }
+}
+
+/* Dark mode — when forced on */
+:root[data-theme="dark"] {
+  --bg: #141816; --card: #1e2421; --text: #ecefed; --muted: #9aa39e; --border: #2f3733;
+  --accent: #5fb59f; --accent-soft: #22332e;
+  --red: #ef7a6c; --red-soft: #3a2321; --amber: #e5b45c; --amber-soft: #3a301a;
+  color-scheme: dark;
+}
