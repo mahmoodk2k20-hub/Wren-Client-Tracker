@@ -178,22 +178,22 @@ function signInScreen() {
   return `
     <div class="hero">
       <h2>Sign in</h2>
-      <p>Enter your email and we'll send you a sign-in link.</p>
-      <input id="signin-email" type="email" placeholder="you@example.com" style="max-width:320px"
-             onkeydown="if (event.key === 'Enter') sendSignInLink()">
-      <p><button class="btn-primary" onclick="sendSignInLink()">Email me a link</button></p>
+      <form onsubmit="event.preventDefault(); signIn()" style="max-width:320px; margin:0 auto">
+        <input id="signin-email" type="email" placeholder="Email" autocomplete="username" required>
+        <input id="signin-password" type="password" placeholder="Password" autocomplete="current-password" required style="margin-top:8px">
+        <p><button class="btn-primary" type="submit">Sign in</button></p>
+      </form>
       <p id="signin-msg"></p>
     </div>`;
 }
 
-async function sendSignInLink() {
-  const email = $("#signin-email").value.trim();
-  if (!email) return;
-  $("#signin-msg").textContent = "Sending…";
-  const { error } = await supa.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin } });
-  $("#signin-msg").textContent = error
-    ? "⚠ " + error.message
-    : "Check your email and open the link on this device.";
+async function signIn() {
+  $("#signin-msg").textContent = "Signing in…";
+  const { error } = await supa.auth.signInWithPassword({
+    email: $("#signin-email").value.trim(),
+    password: $("#signin-password").value,
+  });
+  $("#signin-msg").textContent = error ? "⚠ " + error.message : "";
 }
 
 async function signOut() {
