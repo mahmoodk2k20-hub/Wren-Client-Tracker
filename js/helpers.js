@@ -52,8 +52,9 @@ function money(amount) {
   return "£" + Number(amount || 0).toLocaleString("en-GB");
 }
 
+// A new unique id. In Developer mode it starts with "dev:" (see storage.js).
 function newId() {
-  return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  return idPrefix() + "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
 function deepCopy(value) {

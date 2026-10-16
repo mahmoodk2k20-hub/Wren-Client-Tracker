@@ -188,6 +188,7 @@ function historySection(c) {
 /* ---------- New customer pop-up ---------- */
 
 function newCustomerDialog() {
+  state.addedInARow = 0;
   const options = list => list.map(x => `<option>${escapeHtml(x)}</option>`).join("");
   $("#modal").innerHTML = `
     <div class="overlay center" onclick="if (event.target === this) $('#modal').innerHTML = ''">
@@ -204,6 +205,11 @@ function newCustomerDialog() {
           <input id="new-appt-date" type="date" aria-label="Appointment date">
           <input id="new-appt-time" type="time" aria-label="Appointment time">
         </div>
+        <label class="switch-row">
+          <span>Add several<small>After each one, start the next instead of opening their profile</small></span>
+          <input type="checkbox" class="switch" ${state.addSeveral ? "checked" : ""} onchange="state.addSeveral = this.checked">
+        </label>
+        <p class="added-note" id="added-note"></p>
         <button class="btn-primary" style="width:100%" onclick="createCustomer()">Create customer</button>
       </div>
     </div>`;
@@ -232,6 +238,17 @@ function createCustomer() {
   });
   saveRecord(c);
   addLead();   // counts as a lead on today's Tracking page
+
+  // "Add several" is on: clear the form for the next customer and stay in the pop-up.
+  // (Room and Service stay as you left them, handy when adding similar customers.)
+  if (state.addSeveral) {
+    state.addedInARow = (state.addedInARow || 0) + 1;
+    ["#new-name", "#new-appt-date", "#new-appt-time"].forEach(box => $(box).value = "");
+    $("#added-note").textContent = `✓ Added ${name} · ${state.addedInARow} added so far`;
+    $("#new-name").focus();
+    render();   // the page behind shows them straight away
+    return;
+  }
 
   state.view = "customers";
   state.filter = "All";

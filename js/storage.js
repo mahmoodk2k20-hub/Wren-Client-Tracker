@@ -5,15 +5,14 @@
    when you're signed in.
    ===================================================================== */
 
-// All saved records, by id. Customers have no `kind`; daily stats have kind: "day".
+// All saved records, by id. Customers have no `kind`; daily stats have kind: "day";
+// the developer notes list has kind: "notes".
 let records = {};
 
 // "checking" while starting up, then "signed-in" or "signed-out".
 let authState = "checking";
 let myUserId = null;
 
-const LOCAL_KEY = "hub2";
-const SEEN_KEY  = "hub2-seen";   // ids known to be online (spots deletions made on other devices)
 const DEV_KEY   = "hub2-dev";    // "on" while signed in with Developer mode (shows the Refresh button)
 
 // Ticked with the "Developer mode" button on the sign-in page, used when you sign in.
@@ -22,6 +21,22 @@ let devModeChosen = false;
 function isDevMode() {
   try { return localStorage.getItem(DEV_KEY) === "on"; } catch (e) { return false; }
 }
+
+/* Developer mode has its own separate set of test customers and stats.
+   Everything made in Developer mode gets an id starting "dev:", and each
+   mode only loads its own records — so test customers never mix with your
+   real ones. Each mode also has its own copy on the device. */
+const DEV_PREFIX = "dev:";
+
+function idPrefix() { return isDevMode() ? DEV_PREFIX : ""; }
+
+// Does this record belong to the mode you're in?
+function belongsHere(id) {
+  return isDevMode() ? id.startsWith(DEV_PREFIX) : !id.startsWith(DEV_PREFIX);
+}
+
+function localKey() { return isDevMode() ? "hub2-devdata" : "hub2"; }
+function seenKey()  { return isDevMode() ? "hub2-devdata-seen" : "hub2-seen"; }   // ids known to be online
 
 
 /* ---------- Status line under "Client Hub" ---------- */
@@ -33,15 +48,15 @@ function setStatus(message) {
 /* ---------- Saving ---------- */
 
 function saveOnDevice() {
-  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(records)); } catch (e) { /* storage blocked */ }
+  try { localStorage.setItem(localKey(), JSON.stringify(records)); } catch (e) { /* storage blocked */ }
 }
 
 function loadSeen() {
-  try { return JSON.parse(localStorage.getItem(SEEN_KEY) || "{}"); } catch (e) { return {}; }
+  try { return JSON.parse(localStorage.getItem(seenKey()) || "{}"); } catch (e) { return {}; }
 }
 
 function saveSeen(seen) {
-  try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) {}
+  try { localStorage.setItem(seenKey(), JSON.stringify(seen)); } catch (e) {}
 }
 
 async function sendToAccount(record) {
@@ -113,6 +128,7 @@ function normalise(r) {
   if (r.k && !r.kind) r.kind = r.k;              // older versions used k / j / n / upd
   if (r.upd && !r.updatedAt) r.updatedAt = r.upd;
   delete r.k; delete r.upd;
+  if (r.kind === "notes") return r;              // developer notes list
   if (r.kind === "day") {                        // daily stats
     if (r.apps && !r.appointments) r.appointments = r.apps;
     delete r.apps;
@@ -146,9 +162,10 @@ function normalise(r) {
 /* ---------- Loading & syncing ---------- */
 
 function loadFromDevice() {
-  try { records = JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}"); } catch (e) { records = {}; }
+  try { records = JSON.parse(localStorage.getItem(localKey()) || "{}"); } catch (e) { records = {}; }
+  Object.keys(records).forEach(id => { if (!belongsHere(id)) delete records[id]; });
   Object.values(records).forEach(normalise);
-  setStatus("Saved on this device");
+  setStatus(isDevMode() ? "Developer mode · test data" : "Saved on this device");
 }
 
 // Merges the database with this device. Whichever copy changed most recently wins.
@@ -162,9 +179,13 @@ async function pullFromAccount() {
     return;
   }
 
+  // Never mix the two modes: drop anything that belongs to the other one.
+  Object.keys(records).forEach(id => { if (!belongsHere(id)) delete records[id]; });
+
   const onServer = {};
   const deletedHere = loadDeleted();
   data.forEach(row => {
+    if (!belongsHere(row.id)) return;    // the other mode's records (Developer mode vs real)
     if (deletedHere[row.id]) return;   // deleted on this device – don't bring it back
     const remote = normalise(row.data);
     const local = records[row.id];
@@ -187,7 +208,7 @@ async function pullFromAccount() {
   saveSeen(nowSeen);
 
   saveOnDevice();
-  setStatus("Synced online");
+  setStatus(isDevMode() ? "Developer mode · test data" : "Synced online");
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "");
   if (!typing) {
     render();
@@ -271,6 +292,7 @@ async function signIn() {
   $("#signin-msg").textContent = "Signing in…";
   // Set before signing in, so the very first screen after sign-in already shows Refresh.
   try { devModeChosen ? localStorage.setItem(DEV_KEY, "on") : localStorage.removeItem(DEV_KEY); } catch (e) {}
+  loadFromDevice();   // switch to this mode's own saved customers
   const { error } = await supa.auth.signInWithPassword({
     email: $("#signin-email").value.trim(),
     password: $("#signin-password").value,

@@ -18,6 +18,9 @@ const state = {
   customerView:  "list",    // Customers page: "list" or "board"
   trackMode:     "daily",   // Tracking page: "daily", "week" or "month"
   reviewDate:    today(),   // any date inside the week/month being reviewed
+  addSeveral:    false,     // New customer pop-up: "Add several" switch
+  fadingNotes:   {},        // Notes page: just-ticked notes, still showing greyed out
+  showCompleted: false,     // Notes page: show the ticked notes
 };
 
 // Page name -> function that draws it.
@@ -25,10 +28,11 @@ const PAGES = {
   today:     renderToday,
   customers: renderCustomers,
   tracking:  renderTracking,
+  notes:     renderNotes,      // Developer mode only
 };
 
 // Pages that still make sense with no customers yet.
-const PAGES_WITHOUT_CUSTOMERS = ["tracking"];
+const PAGES_WITHOUT_CUSTOMERS = ["tracking", "notes"];
 
 function showPage(view) {
   state.view = view;
@@ -38,8 +42,11 @@ function showPage(view) {
 // Redraws the current page. Called after every change.
 function render() {
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.view === state.view));
-  $("#dev-refresh").hidden = !(authState === "signed-in" && isDevMode());
-  $("#fab").hidden = authState !== "signed-in";
+  const devMode = authState === "signed-in" && isDevMode();
+  $("#dev-refresh").hidden = !devMode;
+  $("#nav-notes").hidden = !devMode;                 // the Notes tab is Developer mode only
+  if (!devMode && state.view === "notes") state.view = "today";
+  $("#fab").hidden = authState !== "signed-in" || state.view === "notes";
     if (authState === "checking")   { $("#app").innerHTML = `<div class="hero"><p>Loading…</p></div>`; return; }
   if (authState === "signed-out") { $("#app").innerHTML = signInScreen(); return; }
   const noCustomers = allCustomers().length === 0;

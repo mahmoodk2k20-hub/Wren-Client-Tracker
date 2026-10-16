@@ -7,7 +7,8 @@
 
 // The stats record for one day (a blank one if nothing has been entered yet).
 function dayRecord(date) {
-  return records["d_" + date] || { id: "d_" + date, kind: "day", date, leads: 0, appointments: [], sales: [] };
+  const id = idPrefix() + "d_" + date;   // "dev:d_…" in Developer mode
+  return records[id] || { id, kind: "day", date, leads: 0, appointments: [], sales: [] };
 }
 
 // Totals for one day. Sales = appointments marked sold + sales made later after a follow-up.
