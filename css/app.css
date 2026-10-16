@@ -240,8 +240,25 @@ textarea[data-note] { overflow: hidden; resize: none; }
 
 /* Phones */
 @media (max-width: 600px) {
+  /* App-style screen: the top bar and tab bar stay still and only the middle
+     (main) scrolls. When the whole page scrolled, iPhone could shift the
+     bottom bar on longer pages. */
+  :root { padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    display: flex; flex-direction: column;
+    height: 100vh; height: 100dvh;           /* dvh = the real screen height on iPhone */
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  main { flex: 1; min-height: 0; width: 100%; overflow-y: auto; overscroll-behavior: none; }
+
+  /* Hide the scroll bar that appears on the right while you scroll.
+     Two rules because browsers use different names for it. */
+  main, .drawer { scrollbar-width: none; }
+  main::-webkit-scrollbar, .drawer::-webkit-scrollbar { display: none; }
+
   /* Top bar shrinks to one row: title on the left, buttons on the right. */
-  header { flex-wrap: nowrap; gap: 8px; padding: 8px 16px; }
+  header { position: static; flex: none; flex-wrap: nowrap; gap: 8px; padding: 8px 16px; }
   .brand { flex: 1; min-width: 0; white-space: nowrap; }
   #dev-refresh { font-size: 16px; padding: 4px 10px; }
   .hide-on-phone { display: none; }
