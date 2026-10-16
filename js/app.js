@@ -33,6 +33,7 @@ function showPage(view) {
 function render() {
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.view === state.view));
   $("#dev-refresh").hidden = !(authState === "signed-in" && isDevMode());
+  $("#fab").hidden = authState !== "signed-in";
     if (authState === "checking")   { $("#app").innerHTML = `<div class="hero"><p>Loading…</p></div>`; return; }
   if (authState === "signed-out") { $("#app").innerHTML = signInScreen(); return; }
   const noCustomers = allCustomers().length === 0;

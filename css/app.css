@@ -201,6 +201,9 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 /* Appointment "Sold" tick box: keep it tick-sized (inputs are full width by default). */
 .appt-row label input { width: auto; }
 
+/* Big "+ New customer" button — only shown on phones (see the Phones section). */
+.fab { display: none; }
+
 /* Notes boxes grow to fit what's written in them (see fitHeight() in helpers.js). */
 textarea[data-note] { overflow: hidden; resize: none; }
 
@@ -243,14 +246,31 @@ textarea[data-note] { overflow: hidden; resize: none; }
   #dev-refresh { font-size: 16px; padding: 4px 10px; }
   .hide-on-phone { display: none; }
 
-  /* Page buttons become a tab bar along the bottom, where your thumb is. */
+  /* Page buttons become a tab bar along the bottom, where your thumb is.
+     --tab-gap is the space under the tabs. iPhones with a home bar report a
+     34px "safe area" there; using all of it left an empty-looking band, so the
+     tabs sit a little lower (but never closer than 8px to the bottom). */
+  :root { --tab-gap: max(8px, calc(env(safe-area-inset-bottom, 0px) - 16px)); }
   nav {
     position: fixed; left: 0; right: 0; bottom: 0;
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    padding: 6px 8px var(--tab-gap);
     background: var(--card); border-top: 1px solid var(--border);
   }
-  nav button { flex: 1; padding: 10px 0; font-size: 15px; }
-  main { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  nav button { flex: 1; height: 44px; padding: 0; font-size: 15px; }
+
+  /* Room at the bottom of each page so the tab bar and New customer button
+     never cover the last item. */
+  main { padding-bottom: calc(140px + var(--tab-gap)); }
+
+  /* Big "+ New customer" button: fixed just above the tab bar, bottom right. */
+  .fab {
+    display: block; position: fixed; z-index: 9;
+    right: 16px; bottom: calc(50px + var(--tab-gap) + 14px);
+    height: 56px; padding: 0 22px; border-radius: 28px;
+    font-size: 17px; box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+  }
+  .fab[hidden] { display: none; }
+  header .btn-primary { display: none; }   /* the top one isn't needed on phones */
 
   /* Bigger buttons and tick boxes, easier to hit with a thumb. */
   .btn-small { padding: 7px 11px; font-size: 13px; }
