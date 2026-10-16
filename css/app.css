@@ -7,7 +7,11 @@
 /* ---------- Base ---------- */
 * { box-sizing: border-box; }
 :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+  background: var(--bg);          /* same colour behind the page when it stretches */
+  overscroll-behavior: none;      /* no rubber-band pull-down / pull-up */
+}
 body {
   margin: 0;
   background: var(--bg);
@@ -58,6 +62,7 @@ input, select, textarea {
   width: 100%; padding: 8px 10px;
   font: inherit; color: var(--text); background: var(--bg);
   border: 1px solid var(--border); border-radius: 8px;
+  font-size: 16px;                /* 16px+ stops iPhone zooming in when you tap a box */
 }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 textarea { resize: vertical; }

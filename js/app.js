@@ -65,3 +65,6 @@ document.addEventListener("visibilitychange", () => {
 loadFromDevice();
 render();
 connectToAccount();
+
+// Block pinch-zoom on iPhone (Safari sometimes ignores the viewport setting).
+document.addEventListener("gesturestart", e => e.preventDefault());
