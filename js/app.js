@@ -32,6 +32,8 @@ function showPage(view) {
 // Redraws the current page. Called after every change.
 function render() {
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.view === state.view));
+    if (authState === "checking")   { $("#app").innerHTML = `<div class="hero"><p>Loading…</p></div>`; return; }
+  if (authState === "signed-out") { $("#app").innerHTML = signInScreen(); return; }
   const noCustomers = allCustomers().length === 0;
   $("#app").innerHTML = noCustomers && !PAGES_WITHOUT_CUSTOMERS.includes(state.view)
     ? welcomeScreen()
@@ -41,7 +43,7 @@ function render() {
 function welcomeScreen() {
   return `
     <div class="hero">
-      <h2>TEST</h2>
+      <h2>Welcome</h2>
       <button class="btn-primary" onclick="newCustomerDialog()">+ Add Client</button>
     </div>`;
 }
