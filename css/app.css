@@ -252,6 +252,12 @@ textarea[data-note] { overflow: hidden; resize: none; }
   }
   main { flex: 1; min-height: 0; width: 100%; overflow-y: auto; overscroll-behavior: none; }
 
+  /* Home Screen app on iPhone (app.js adds the "standalone" class).
+     There, iOS reports 100dvh as the screen MINUS the status bar area, so the
+     app ended short of the real bottom and the tab bar floated above it.
+     100lvh is the full screen height, so the bar sits flush with the bottom. */
+  html.standalone, html.standalone body { height: 100lvh; }
+
   /* Hide the scroll bar that appears on the right while you scroll.
      Two rules because browsers use different names for it. */
   main, .drawer { scrollbar-width: none; }

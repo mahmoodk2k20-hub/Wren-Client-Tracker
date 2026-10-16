@@ -64,6 +64,10 @@ document.addEventListener("visibilitychange", () => {
 
 
 /* ---------- Start ---------- */
+
+// Opened from the iPhone Home Screen? Mark the page so app.css can fix the screen height.
+if (navigator.standalone) document.documentElement.classList.add("standalone");
+
 loadFromDevice();
 render();
 connectToAccount();
