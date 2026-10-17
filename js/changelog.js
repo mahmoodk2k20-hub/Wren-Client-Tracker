@@ -9,6 +9,19 @@
 
 const CHANGELOG = [
   {
+    version: 3,
+    date: "2026-10-17",
+    changes: [
+      "Tracking: new My commission section at the bottom. Tap it to slide up your sales and commission for a time period.",
+      "Developer mode: My commission lets you set the % at sale and % on delivery for each room type.",
+      "Today: ticked tasks stay for the rest of the day, greyed out at the bottom. Tap the tick again to undo.",
+      "Today: the \"No follow-up booked\" list now opens and closes when you tap its heading.",
+      "Customers: new Sort menu (next follow-up, name, newest, value, stage).",
+      "Tracking: leads now use a − and + counter.",
+      "Week and month reviews: a chart of leads and sales value by day. Tap it to read a day.",
+    ],
+  },
+  {
     version: 2,
     date: "2026-10-17",
     changes: [

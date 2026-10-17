@@ -288,34 +288,34 @@ function createCustomer() {
 
 /* ---------- Tasks ---------- */
 
-// Tick a task from the Today page.
-// It stays on the page, crossed out with an Undo button, for UNDO_SECONDS.
-const UNDO_SECONDS = 5;
-
+// Tick a task from the Today page. It stays there greyed out for the rest of the day.
 function tickTask(customerId, taskId) {
   const c = records[customerId];
   const task = c.tasks.find(t => t.id === taskId);
   if (task.kind === "appointment") { appointmentOutcome(customerId, taskId); return; }
 
-  const before = deepCopy(c);   // a copy to go back to if you press Undo
+  const before = deepCopy(c);   // a copy to go back to if you untick it
   completeTask(c, task);
   saveCustomer(c, false);
   state.recentlyDone[taskId] = { customerId, before };
-  setTimeout(() => {
-    delete state.recentlyDone[taskId];
-    const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "");
-    if (state.view === "today" && !typing) render();
-  }, UNDO_SECONDS * 1000);
   render();
 }
 
-// Puts the customer back exactly as they were before the tick
-// (task unticked, and any journey step or stage it moved undone too).
-function undoTask(taskId) {
+// Untick a done task on Today. If it was ticked since the app opened, the customer
+// goes back exactly as they were (including any journey step or stage it moved);
+// otherwise the task just reopens.
+function untickTask(customerId, taskId) {
   const undo = state.recentlyDone[taskId];
-  if (!undo) return;
   delete state.recentlyDone[taskId];
-  saveRecord(undo.before);
+  if (undo) {
+    saveRecord(undo.before);
+  } else {
+    const c = records[customerId];
+    const task = c.tasks.find(t => t.id === taskId);
+    task.done = false;
+    task.doneOn = "";
+    saveRecord(c);
+  }
   render();
 }
 

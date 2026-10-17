@@ -20,6 +20,9 @@ const state = {
   reviewDate:    today(),   // any date inside the week/month being reviewed
   addSeveral:    false,     // New customer pop-up: "Add several" switch
   addPast:       false,     // New customer pop-up: "Past client" switch
+  followUpOpen:  false,     // Today: is the "No follow-up booked" list open?
+  sortBy:        "soonest", // Customers: how the list is sorted (see SORTS in customers.js)
+  commissionPeriod: "month", // My commission: "week", "month", "lastMonth", "year" or "all"
   fadingNotes:   {},        // Notes page: just-ticked notes, still showing greyed out
   showCompleted: false,     // Notes page: show the ticked notes
 };

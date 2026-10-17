@@ -107,6 +107,7 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 .due { font-size: 13px; color: var(--muted); white-space: nowrap; }
 .late { color: var(--red); font-weight: 600; }
 .overdue .list { border-color: var(--red); }
+h2 .collapse { border: 0; background: none; padding: 0; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
 .empty { padding: 16px; text-align: center; color: var(--muted); }
 
 
@@ -246,6 +247,10 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 
 
 /* ---------- Customers: List / Board switch and the board ---------- */
+.list-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.list-tools .view-switch { margin-bottom: 0; }
+.sort-by { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.sort-by select { width: auto; padding: 6px 8px; }
 .view-switch { display: inline-flex; gap: 4px; margin-bottom: 10px; padding: 3px; border-radius: 10px; background: var(--border); }
 .view-switch button { border: 0; background: none; color: var(--muted); font-weight: 600; padding: 6px 16px; border-radius: 8px; }
 .view-switch button.on { background: var(--card); color: var(--text); }
@@ -291,7 +296,51 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 .show-completed { margin-bottom: 8px; }
 
 
+/* ---------- Slide-up sheet (e.g. My commission) ---------- */
+.sheet-overlay { position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0); transition: background .3s; }
+.sheet-overlay.open { background: rgba(0, 0, 0, .45); }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 640px;
+  height: 75%;                                         /* 3/4 of the screen */
+  display: flex; flex-direction: column;
+  background: var(--card); border-radius: 16px 16px 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  transform: translateY(100%); transition: transform .3s ease;   /* starts below the screen */
+}
+.sheet-overlay.open .sheet { transform: translateY(0); }
+.sheet-handle { display: flex; justify-content: center; padding: 10px 0 14px; touch-action: none; cursor: grab; }
+.sheet-handle span { width: 40px; height: 5px; border-radius: 3px; background: var(--muted); opacity: .5; }
+.sheet-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 24px; scrollbar-width: none; }
+.sheet-body::-webkit-scrollbar { display: none; }
+.sheet-title { margin: 0 0 10px; font-size: 22px; }
+
+/* ---------- My commission ---------- */
+.commission-card { display: block; width: 100%; text-align: left; color: var(--text); cursor: pointer; }
+.commission-card b { display: block; font-size: 24px; }
+.commission-card span { display: block; font-size: 13px; color: var(--muted); }
+.commission-card small { display: block; margin-top: 4px; font-size: 12px; color: var(--accent); }
+.commission-cell { text-align: right; white-space: nowrap; }
+.commission-cell b { display: block; }
+.commission-cell small { font-size: 11px; color: var(--muted); }
+.rate-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.rate-row:last-child { border-bottom: 0; }
+.rate-row label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); }
+.rate-row input { margin-top: 2px; }
+
+
+/* ---------- Tracking: leads counter (−  3  +) ---------- */
+.counter { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.counter button { width: 52px; height: 48px; border: 0; background: var(--bg); color: var(--accent); font-size: 26px; font-weight: 600; }
+.counter b { min-width: 64px; text-align: center; font-size: 24px; }
+
+
 /* ---------- Tracking: reviews ---------- */
+.chart svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.chart-readout { margin: 0 0 4px; font-size: 13px; color: var(--muted); min-height: 1.3em; }
+.chart-name { font-size: 12px; font-weight: 600; fill: var(--text); }
+.chart-note { font-size: 10.5px; fill: var(--muted); }
+.chart-base { stroke: var(--border); stroke-width: 1; }
+.chart-cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
 .period-name { flex: 1; text-align: center; }
 .review-summary { font-size: 15px; margin: 4px 0 14px; }
 .stat small { display: block; margin-top: 2px; font-size: 11px; color: var(--muted); }

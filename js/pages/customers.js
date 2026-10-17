@@ -19,7 +19,14 @@ function renderCustomers() {
   const board = state.customerView === "board";
 
   return `
-    <div class="view-switch">${views}</div>
+    <div class="list-tools">
+      <div class="view-switch">${views}</div>
+      <label class="sort-by">Sort
+        <select onchange="state.sortBy = this.value; render()">
+          ${Object.entries(SORTS).map(([key, [label]]) => `<option value="${key}" ${state.sortBy === key ? "selected" : ""}>${label}</option>`).join("")}
+        </select>
+      </label>
+    </div>
     <input class="search" placeholder="Search customers…" value="${escapeHtml(state.search)}"
            oninput="state.search = this.value; $('#customer-list').innerHTML = ${board ? "renderBoard()" : "renderCustomerList()"}">
     ${board ? "" : `
@@ -52,13 +59,7 @@ function searchMatches() {
 
 // The list itself (redrawn on its own while you type in the search box).
 function renderCustomerList() {
-  const matches = searchMatches()
-    .filter(c => matchesFilter(c, state.filter))
-    .sort((a, b) => {
-      // Plain character order (localeCompare put "~" before dates, so closed customers came first).
-      const keyA = sortKey(a), keyB = sortKey(b);
-      return keyA < keyB ? -1 : keyA > keyB ? 1 : 0;
-    });
+  const matches = sortCustomers(searchMatches().filter(c => matchesFilter(c, state.filter)));
 
   const header = `
     <div class="crow head">
@@ -73,7 +74,7 @@ function renderCustomerList() {
 function renderBoard() {
   const matches = searchMatches();
   const columns = STAGES.map(stage => {
-    const inStage = matches.filter(c => c.stage === stage.name).sort((a, b) => sortKey(a) < sortKey(b) ? -1 : 1);
+    const inStage = sortCustomers(matches.filter(c => c.stage === stage.name));
     const total = inStage.reduce((sum, c) => sum + (+c.value || 0), 0);
     const cards = inStage.map(c => {
       const next = nextTask(c);
@@ -92,6 +93,25 @@ function renderBoard() {
   }).join("");
   return `<div class="board">${columns}</div>`;
 }
+
+/* Sort by — the options in the Sort menu.
+   Each one is [label, compare]. A compare function gets two customers and
+   returns a negative number if `a` goes first, positive if `b` does. */
+const SORTS = {
+  soonest: ["Next follow-up", (a, b) => compareText(sortKey(a), sortKey(b))],
+  name:    ["Name A–Z",       (a, b) => a.name.localeCompare(b.name)],
+  newest:  ["Newest added",   (a, b) => compareText(b.created || "", a.created || "")],
+  value:   ["Value (high–low)", (a, b) => (+b.value || 0) - (+a.value || 0)],
+  stage:   ["Stage",          (a, b) => stageIndex(a) - stageIndex(b) || compareText(sortKey(a), sortKey(b))],
+};
+
+function sortCustomers(list) {
+  return list.slice().sort(SORTS[state.sortBy][1]);
+}
+
+// Plain character order (localeCompare put "~" before dates, so closed customers came first).
+function compareText(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
+function stageIndex(c) { return STAGES.findIndex(s => s.name === c.stage); }
 
 // Order: soonest follow-up first, then no follow-up, then closed customers last.
 function sortKey(c) {

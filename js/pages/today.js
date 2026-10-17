@@ -9,13 +9,10 @@ function renderToday() {
   const nextMonday = addDays(7, thisMonday);
   const weekAfter  = addDays(14, thisMonday);
 
-  // Tasks ticked in the last few seconds stay on the page, crossed out, so you can Undo.
-  const justDone = Object.entries(state.recentlyDone).flatMap(([taskId, { customerId }]) => {
-    const c = records[customerId];
-    const t = c && c.tasks.find(t => t.id === taskId);
-    return t && t.done ? [{ ...t, customer: c }] : [];
-  });
-  const tasks = allOpenTasks().concat(justDone).sort(bySoonest);
+  // Tasks ticked today stay on the page, greyed out at the bottom of their section.
+  const doneToday = allCustomers().flatMap(c =>
+    c.tasks.filter(t => t.done && t.doneOn === now).map(t => ({ ...t, customer: c })));
+  const tasks = allOpenTasks().concat(doneToday);
   const overdue    = tasks.filter(t => t.due < now);
   const dueToday   = tasks.filter(t => t.due === now);
   const restOfWeek = tasks.filter(t => t.due > now && t.due < nextMonday);
@@ -75,7 +72,9 @@ function switchPeriod(setting) {
 
 function taskSection(title, tasks, { warn = false, hideIfEmpty = false, emptyText = "" } = {}) {
   if (tasks.length === 0 && hideIfEmpty) return "";
-  const rows = tasks.length ? tasks.map(taskRow).join("") : `<div class="empty">${emptyText}</div>`;
+  // Open tasks at the top (soonest first), done ones underneath.
+  const sorted = tasks.slice().sort((a, b) => (a.done - b.done) || bySoonest(a, b));
+  const rows = sorted.length ? sorted.map(taskRow).join("") : `<div class="empty">${emptyText}</div>`;
   return `
     <div class="${warn ? "overdue" : ""}">
       <h2>${title}<i>${stillOpen(tasks)}</i></h2>
@@ -86,12 +85,12 @@ function taskSection(title, tasks, { warn = false, hideIfEmpty = false, emptyTex
 function taskRow(task) {
   const c = task.customer;
   const late = task.due < today();
-  if (task.done) {   // just ticked: crossed out with an Undo button for a few seconds
+  if (task.done) {   // done today: greyed out; tap the tick again to undo
+    const canUndo = task.kind !== "appointment";   // an appointment's result can't be un-ticked here
     return `
     <div class="row done">
-      <input type="checkbox" checked disabled>
-      <div class="row-main"><b>${escapeHtml(task.text)}</b><span>${escapeHtml(c.name)}</span></div>
-      <button class="btn-small" onclick="undoTask('${task.id}')">Undo</button>
+      <input type="checkbox" checked ${canUndo ? `onchange="untickTask('${c.id}','${task.id}')"` : "disabled"}>
+      <div class="row-main" onclick="openCustomer('${c.id}')"><b>${escapeHtml(task.text)}</b><span>${escapeHtml(c.name)}</span></div>
     </div>`;
   }
   return `
@@ -116,6 +115,11 @@ function noFollowUpSection(list) {
       </div>
       <button class="btn-small" onclick="openCustomer('${c.id}')">Add task</button>
     </div>`).join("");
-  // An alert: every open customer should have a next step booked.
-  return `<div class="overdue"><h2>⚠ No follow-up booked<i>${list.length}</i></h2><div class="list">${rows}</div></div>`;
+  // An alert: every open customer should have a next step booked. Tap the heading to open or close it.
+  return `
+    <div class="overdue">
+      <h2><button class="collapse" onclick="state.followUpOpen = !state.followUpOpen; render()">
+        ${state.followUpOpen ? "▾" : "▸"} ⚠ No follow-up booked<i>${list.length}</i></button></h2>
+      ${state.followUpOpen ? `<div class="list">${rows}</div>` : ""}
+    </div>`;
 }

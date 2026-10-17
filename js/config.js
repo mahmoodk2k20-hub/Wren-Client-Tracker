@@ -135,6 +135,17 @@ const AUTO_TASKS = {
 };
 
 
+/* ---------- Commission ----------
+   Starting rates per room type: % paid at sale (deposit) and % paid once
+   delivered. Change them in the app: Developer mode → Tracking → My commission. */
+const COMMISSION_DEFAULTS = {
+  "Kitchen": { atSale: 2.4, onDelivery: 1.2 },
+};
+
+// The journey step that means "delivered" (unlocks the delivery commission).
+const DELIVERED_STEP = "Delivery";
+
+
 /* ---------- Design appointments ----------
    Booked in the New customer pop-up. The appointment shows on the Today page
    on its date; ticking it asks how it went. */

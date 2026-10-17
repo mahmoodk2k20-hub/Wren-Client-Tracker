@@ -32,7 +32,17 @@ function idPrefix() { return isDevMode() ? DEV_PREFIX : ""; }
 
 // Does this record belong to the mode you're in?
 function belongsHere(id) {
+  if (id === SETTINGS_ID) return true;   // settings are shared by both modes
   return isDevMode() ? id.startsWith(DEV_PREFIX) : !id.startsWith(DEV_PREFIX);
+}
+
+/* Settings shared by both modes, e.g. commission rates set in Developer mode
+   and used by your real account. One record, so it syncs like everything else.
+   Anything not set yet falls back to the defaults in config.js. */
+const SETTINGS_ID = "settings";
+
+function settingsRecord() {
+  return records[SETTINGS_ID] || { id: SETTINGS_ID, kind: "settings" };
 }
 
 function localKey() { return isDevMode() ? "hub2-devdata" : "hub2"; }
@@ -128,7 +138,7 @@ function normalise(r) {
   if (r.k && !r.kind) r.kind = r.k;              // older versions used k / j / n / upd
   if (r.upd && !r.updatedAt) r.updatedAt = r.upd;
   delete r.k; delete r.upd;
-  if (r.kind === "notes") return r;              // developer notes list
+  if (r.kind === "notes" || r.kind === "settings") return r;   // notes list, shared settings
   if (r.kind === "day") {                        // daily stats
     if (r.apps && !r.appointments) r.appointments = r.apps;
     delete r.apps;

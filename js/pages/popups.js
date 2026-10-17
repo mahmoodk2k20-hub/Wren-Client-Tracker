@@ -111,3 +111,60 @@ function saveSale(customerId) {
   recordSale(c, amount);
   closePopup();
 }
+
+
+/* ---------- Slide-up sheet ----------
+   A panel that slides up from the bottom to 3/4 of the screen, like the
+   comments on Instagram. Drag its top bar down (or tap above it) to close.
+   Drawn into <div id="sheet"> (index.html). */
+
+function openSheet(html) {
+  $("#sheet").innerHTML = `
+    <div class="sheet-overlay" onclick="if (event.target === this) closeSheet()">
+      <div class="sheet">
+        <div class="sheet-handle"><span></span></div>
+        <div class="sheet-body">${html}</div>
+      </div>
+    </div>`;
+  // Added a moment later so the slide-up animation plays.
+  requestAnimationFrame(() => requestAnimationFrame(() => $("#sheet .sheet-overlay")?.classList.add("open")));
+  dragToClose($("#sheet .sheet-handle"), $("#sheet .sheet"));
+}
+
+// Just redraw what's inside (keeps the sheet open and where it is).
+function updateSheet(html) {
+  const body = $("#sheet .sheet-body");
+  if (body) body.innerHTML = html;
+}
+
+function closeSheet() {
+  const overlay = $("#sheet .sheet-overlay");
+  if (!overlay) return;
+  overlay.classList.remove("open");
+  setTimeout(() => $("#sheet").innerHTML = "", 300);   // after the slide-down
+}
+
+// The sheet follows your finger down; let go far enough and it closes.
+function dragToClose(handle, sheet) {
+  let startY = null;
+  handle.addEventListener("pointerdown", e => {
+    startY = e.clientY;
+    sheet.style.transition = "none";
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener("pointermove", e => {
+    if (startY === null) return;
+    const down = Math.max(0, e.clientY - startY);
+    sheet.style.transform = `translateY(${down}px)`;
+  });
+  const letGo = e => {
+    if (startY === null) return;
+    const down = e.clientY - startY;
+    startY = null;
+    sheet.style.transition = "";
+    sheet.style.transform = "";
+    if (down > 100) closeSheet();
+  };
+  handle.addEventListener("pointerup", letGo);
+  handle.addEventListener("pointercancel", letGo);
+}

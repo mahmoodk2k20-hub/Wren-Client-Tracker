@@ -16,6 +16,8 @@
   --red-soft:    #fbeae8;
   --amber:       #9a6a12;   /* "Active" badge */
   --amber-soft:  #fdf3df;
+  --chart-1:     #00876c;   /* review chart: leads */
+  --chart-2:     #b86b00;   /* review chart: sales value */
   color-scheme: light;
 }
 
@@ -25,6 +27,7 @@
     --bg: #141816; --card: #1e2421; --text: #ecefed; --muted: #9aa39e; --border: #2f3733;
     --accent: #5fb59f; --accent-soft: #22332e;
     --red: #ef7a6c; --red-soft: #3a2321; --amber: #e5b45c; --amber-soft: #3a301a;
+    --chart-1: #2ea486; --chart-2: #c27f15;
     color-scheme: dark;
   }
 }
@@ -34,5 +37,6 @@
   --bg: #141816; --card: #1e2421; --text: #ecefed; --muted: #9aa39e; --border: #2f3733;
   --accent: #5fb59f; --accent-soft: #22332e;
   --red: #ef7a6c; --red-soft: #3a2321; --amber: #e5b45c; --amber-soft: #3a301a;
+  --chart-1: #2ea486; --chart-2: #c27f15;
   color-scheme: dark;
 }
