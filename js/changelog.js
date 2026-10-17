@@ -9,6 +9,15 @@
 
 const CHANGELOG = [
   {
+    version: 2,
+    date: "2026-10-17",
+    changes: [
+      "New customer pop-up: switch on \"Past client\" to add old customers with their stage and value.",
+      "Past clients never add leads or sales to Tracking, and stay out of your weekly and monthly reviews.",
+      "Past clients show a \"Past\" label, there's a \"Past\" filter on the Customers list, and each customer's Details has a Past client switch.",
+    ],
+  },
+  {
     version: 1,
     date: "2026-10-16",
     changes: [

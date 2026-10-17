@@ -6,8 +6,9 @@
 
 function renderCustomers() {
   const everyone = allCustomers();
-  const filterButtons = ["All", ...STAGES.map(s => s.name)].map(name => {
-    const count = name === "All" ? everyone.length : everyone.filter(c => c.stage === name).length;
+  // "Past" shows only past clients; every other button is a stage.
+  const filterButtons = ["All", ...STAGES.map(s => s.name), "Past"].map(name => {
+    const count = everyone.filter(c => matchesFilter(c, name)).length;
     return `<button class="${state.filter === name ? "on" : ""}" data-stage="${escapeHtml(name)}"
               onclick="state.filter = this.dataset.stage; render()">${escapeHtml(name)} (${count})</button>`;
   }).join("");
@@ -32,6 +33,17 @@ function renderCustomers() {
   `;
 }
 
+function matchesFilter(c, filter) {
+  if (filter === "All") return true;
+  if (filter === "Past") return !!c.past;
+  return c.stage === filter;
+}
+
+// A small "Past" label in front of past clients' details.
+function pastBadge(c) {
+  return c.past ? `<em class="badge past">Past</em> ` : "";
+}
+
 // Customers matching the search box.
 function searchMatches() {
   const search = state.search.toLowerCase();
@@ -41,7 +53,7 @@ function searchMatches() {
 // The list itself (redrawn on its own while you type in the search box).
 function renderCustomerList() {
   const matches = searchMatches()
-    .filter(c => state.filter === "All" || c.stage === state.filter)
+    .filter(c => matchesFilter(c, state.filter))
     .sort((a, b) => {
       // Plain character order (localeCompare put "~" before dates, so closed customers came first).
       const keyA = sortKey(a), keyB = sortKey(b);
@@ -68,7 +80,7 @@ function renderBoard() {
       return `
         <div class="board-card" onclick="openCustomer('${c.id}')">
           <b>${escapeHtml(c.name)}</b>
-          <span>${escapeHtml(c.room)} · ${escapeHtml(c.service)}${c.value ? " · " + money(c.value) : ""}</span>
+          <span>${pastBadge(c)}${escapeHtml(c.room)} · ${escapeHtml(c.service)}${c.value ? " · " + money(c.value) : ""}</span>
           <span class="due ${next && next.due < today() ? "late" : ""}">${next ? escapeHtml(next.text) + " · " + whenText(next) : "No follow-up"}</span>
         </div>`;
     }).join("");
@@ -98,7 +110,7 @@ function customerRow(c) {
     <div class="crow" data-id="${c.id}" data-lost-label="${escapeHtml(SWIPE_LEFT_STAGE)}" onclick="openCustomer('${c.id}')">
       <div>
         <b>${escapeHtml(c.name)}</b>
-        <span>${escapeHtml(c.room)} · ${escapeHtml(c.service)}${c.phone ? " · " + escapeHtml(c.phone) : ""}</span>
+        <span>${pastBadge(c)}${escapeHtml(c.room)} · ${escapeHtml(c.service)}${c.phone ? " · " + escapeHtml(c.phone) : ""}</span>
       </div>
       <div>
         ${stagePill(c.stage)}

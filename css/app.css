@@ -114,6 +114,7 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .badge { display: inline-block; font-size: 12px; border-radius: 10px; padding: 1px 8px; background: var(--border); color: var(--muted); }
+.badge.past { font-style: normal; background: var(--border); color: var(--text); margin-right: 2px; }
 .badge.green { background: var(--accent-soft); color: var(--accent); }
 .badge.amber { background: var(--amber-soft); color: var(--amber); }
 .progress { height: 5px; margin-top: 4px; background: var(--border); border-radius: 3px; overflow: hidden; }
@@ -238,6 +239,9 @@ h2 i { font-style: normal; background: var(--border); border-radius: 10px; paddi
 }
 .switch:checked { background: var(--accent); }
 .switch:checked::after { transform: translateX(20px); }
+/* New customer pop-up: the Past client switch swaps which boxes show. */
+.dialog .past-only, .dialog.past .current-only { display: none; }
+.dialog.past .past-only { display: grid; }
 .added-note { min-height: 1em; margin: 0 0 8px; font-size: 13px; color: var(--accent); }
 
 

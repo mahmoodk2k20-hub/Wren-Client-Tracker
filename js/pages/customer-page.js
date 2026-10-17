@@ -56,7 +56,7 @@ function drawCustomerPage() {
       <div class="drawer" data-id="${escapeHtml(c.id)}">
         <h1>
           <span><span id="drawer-name">${escapeHtml(c.name)}</span><br>
-            <small>${escapeHtml(c.room)} · ${escapeHtml(c.service)}</small></span>
+            <small>${pastBadge(c)}${escapeHtml(c.room)} · ${escapeHtml(c.service)}</small></span>
           <button class="btn-close" onclick="closeCustomer()">×</button>
         </h1>
         ${stageSection(c)}
@@ -172,7 +172,20 @@ function detailsSection(c) {
       : `<input type="${type}" data-field="${key}" value="${escapeHtml(c[key])}" oninput="saveSoon(this, setField)" onchange="saveNow()">`;
     return `<div><label class="label">${label}</label>${input}</div>`;
   }).join("");
-  return `<h2>Details</h2><div class="field-grid">${fields}</div>`;
+  return `
+    <h2>Details</h2>
+    <label class="switch-row">
+      <span>Past client<small>Not counted in Tracking or your reviews</small></span>
+      <input type="checkbox" class="switch" ${c.past ? "checked" : ""} onchange="setPast(this.checked)">
+    </label>
+    <div class="field-grid">${fields}</div>`;
+}
+
+function setPast(isPast) {
+  const c = currentCustomer();
+  c.past = isPast;
+  addHistory(c, isPast ? "Marked as a past client" : "Marked as a current client");
+  saveCustomer(c);
 }
 
 function historySection(c) {
@@ -192,18 +205,29 @@ function newCustomerDialog() {
   const options = list => list.map(x => `<option>${escapeHtml(x)}</option>`).join("");
   $("#modal").innerHTML = `
     <div class="overlay center" onclick="if (event.target === this) $('#modal').innerHTML = ''">
-      <div class="dialog">
+      <div class="dialog ${state.addPast ? "past" : ""}">
         <h1>New customer<button class="btn-close" onclick="$('#modal').innerHTML = ''">×</button></h1>
+        <label class="switch-row">
+          <span>Past client<small>Already a customer before. Not counted in Tracking or your reviews</small></span>
+          <input type="checkbox" class="switch" ${state.addPast ? "checked" : ""}
+                 onchange="state.addPast = this.checked; this.closest('.dialog').classList.toggle('past', this.checked)">
+        </label>
         <label class="label">Name</label>
         <input id="new-name" onkeydown="if (event.key === 'Enter') createCustomer()">
         <div class="field-grid" style="margin:6px 0 0">
           <div><label class="label">Room</label><select id="new-room">${options(ROOMS)}</select></div>
           <div><label class="label">Service</label><select id="new-service">${options(SERVICES)}</select></div>
         </div>
-        <label class="label">${escapeHtml(APPOINTMENT_TASK)} (optional)</label>
-        <div class="field-grid two-up" style="margin-bottom:14px">
-          <input id="new-appt-date" type="date" aria-label="Appointment date">
-          <input id="new-appt-time" type="time" aria-label="Appointment time">
+        <div class="current-only">
+          <label class="label">${escapeHtml(APPOINTMENT_TASK)} (optional)</label>
+          <div class="field-grid two-up" style="margin-bottom:14px">
+            <input id="new-appt-date" type="date" aria-label="Appointment date">
+            <input id="new-appt-time" type="time" aria-label="Appointment time">
+          </div>
+        </div>
+        <div class="past-only field-grid two-up" style="margin-bottom:14px">
+          <div><label class="label">Stage</label><select id="new-stage">${options(STAGES.map(s => s.name))}</select></div>
+          <div><label class="label">Value (£)</label><input id="new-value" type="number" inputmode="decimal"></div>
         </div>
         <label class="switch-row">
           <span>Add several<small>After each one, start the next instead of opening their profile</small></span>
@@ -222,7 +246,8 @@ function createCustomer() {
 
   // A booked design appointment becomes the first task (it shows on Today on its date).
   // No appointment: the usual "Make first contact" task for today.
-  const apptDate = $("#new-appt-date").value;
+  const past = state.addPast;
+  const apptDate = past ? "" : $("#new-appt-date").value;
   const firstTask = apptDate
     ? { id: newId(), kind: "appointment", text: APPOINTMENT_TASK, due: apptDate, time: $("#new-appt-time").value, done: false }
     : { id: newId(), text: FIRST_TASK, due: today(), done: false };
@@ -232,18 +257,21 @@ function createCustomer() {
     name,
     room:    $("#new-room").value,
     service: $("#new-service").value,
-    stage:   STAGES[0].name,
+    stage:   past ? $("#new-stage").value : STAGES[0].name,
+    value:   past ? (+$("#new-value").value || 0) : 0,
+    past,    // past clients never count towards Tracking or the reviews
     created: today(),
-    tasks:   [firstTask],
+    tasks:   past ? [] : [firstTask],   // past clients: add their follow-ups yourself
+    log:     past ? [{ date: today(), text: "Added as a past client" }] : [],
   });
   saveRecord(c);
-  addLead();   // counts as a lead on today's Tracking page
+  if (!past) addLead();   // a new (current) customer counts as a lead on today's Tracking page
 
   // "Add several" is on: clear the form for the next customer and stay in the pop-up.
   // (Room and Service stay as you left them, handy when adding similar customers.)
   if (state.addSeveral) {
     state.addedInARow = (state.addedInARow || 0) + 1;
-    ["#new-name", "#new-appt-date", "#new-appt-time"].forEach(box => $(box).value = "");
+    ["#new-name", "#new-appt-date", "#new-appt-time", "#new-value"].forEach(box => $(box).value = "");
     $("#added-note").textContent = `✓ Added ${name} · ${state.addedInARow} added so far`;
     $("#new-name").focus();
     render();   // the page behind shows them straight away
@@ -402,7 +430,7 @@ function changeStage(c, name) {
   const wasSold = isSold(c);
   c.stage = name;
   addHistory(c, "Moved to " + name);
-  if (!wasSold && isSold(c) && !hasRecordedSale(c.id)) {
+  if (!wasSold && isSold(c) && !c.past && !hasRecordedSale(c.id)) {   // past clients: never asked
     setTimeout(() => saleDialog(c.id), 0);   // after the change has been saved
   }
 }

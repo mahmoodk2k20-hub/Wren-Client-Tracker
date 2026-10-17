@@ -51,6 +51,7 @@ function addLead(date = today()) {
 
 // A design appointment result, on the appointment's date.
 function recordAppointment(c, date, sold, value) {
+  if (c.past) return;   // past clients never count towards Tracking
   const day = dayRecord(date);
   day.appointments = day.appointments || [];
   day.appointments.push({ id: newId(), customerId: c.id, name: c.name, sold, value: sold ? value : 0 });
@@ -59,6 +60,7 @@ function recordAppointment(c, date, sold, value) {
 
 // A sale made later (after a follow-up), on today's date.
 function recordSale(c, value, date = today()) {
+  if (c.past) return;   // past clients never count towards Tracking
   const day = dayRecord(date);
   day.sales = day.sales || [];
   day.sales.push({ id: newId(), customerId: c.id, name: c.name, value });
@@ -205,7 +207,7 @@ function reviewNumbers(kind, anyDate) {
   });
   sales.sort((a, b) => a.date < b.date ? -1 : 1);
 
-  const customers = allCustomers();
+  const customers = allCustomers().filter(c => !c.past);   // reviews are about current clients only
   const quoted = customers.filter(c => inPeriod(c.journey[APPOINTMENT_TICKS_STEP]));
   const lost = customers.filter(c => c.log.some(e => e.text === "Moved to " + LOST_STAGE && inPeriod(e.date)));
 

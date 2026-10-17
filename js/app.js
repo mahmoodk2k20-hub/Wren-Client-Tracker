@@ -19,6 +19,7 @@ const state = {
   trackMode:     "daily",   // Tracking page: "daily", "week" or "month"
   reviewDate:    today(),   // any date inside the week/month being reviewed
   addSeveral:    false,     // New customer pop-up: "Add several" switch
+  addPast:       false,     // New customer pop-up: "Past client" switch
   fadingNotes:   {},        // Notes page: just-ticked notes, still showing greyed out
   showCompleted: false,     // Notes page: show the ticked notes
 };
