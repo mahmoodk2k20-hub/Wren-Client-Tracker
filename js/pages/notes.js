@@ -7,7 +7,7 @@
    ===================================================================== */
 
 const KEEP_COMPLETED = 5;
-const FADE_SECONDS = 1.5;   // how long a ticked note stays (greyed out) before it goes
+const FADE_SECONDS = 2.0;   // how long a ticked note stays (greyed out) before it goes
 
 function notesRecord() {
   const id = idPrefix() + "notes";
@@ -27,7 +27,7 @@ function renderNotes() {
       ${showing.map(reminderRow).join("")}
       <label class="reminder">
         <span class="circle add">+</span>
-        <textarea id="new-reminder" class="reminder-text" rows="1" placeholder="New Reminder" enterkeyhint="done"
+        <textarea id="new-reminder" class="reminder-text" rows="1" placeholder="New Note" enterkeyhint="done"
                   oninput="fitHeight(this)"
                   onkeydown="if (event.key === 'Enter') { event.preventDefault(); addReminder(this.value); }"></textarea>
       </label>
