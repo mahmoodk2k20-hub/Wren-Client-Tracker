@@ -57,6 +57,7 @@ function render() {
   $("#app").innerHTML = noCustomers && !PAGES_WITHOUT_CUSTOMERS.includes(state.view)
     ? welcomeScreen()
     : PAGES[state.view]();
+  document.querySelectorAll("#app textarea.reminder-text").forEach(fitHeight);   // notes wrap to fit (see notes.js)
 }
 
 function welcomeScreen() {

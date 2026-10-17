@@ -9,6 +9,13 @@
 
 const CHANGELOG = [
   {
+    version: 4,
+    date: "2026-10-17",
+    changes: [
+      "Notes (Developer mode): long notes now wrap onto new lines so you can read all of them.",
+    ],
+  },
+  {
     version: 3,
     date: "2026-10-17",
     changes: [

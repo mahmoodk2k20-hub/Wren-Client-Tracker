@@ -27,8 +27,9 @@ function renderNotes() {
       ${showing.map(reminderRow).join("")}
       <label class="reminder">
         <span class="circle add">+</span>
-        <input id="new-reminder" class="reminder-text" placeholder="New Reminder" enterkeyhint="done"
-               onkeydown="if (event.key === 'Enter') addReminder(this.value)">
+        <textarea id="new-reminder" class="reminder-text" rows="1" placeholder="New Reminder" enterkeyhint="done"
+                  oninput="fitHeight(this)"
+                  onkeydown="if (event.key === 'Enter') { event.preventDefault(); addReminder(this.value); }"></textarea>
       </label>
     </div>
     ${completed.length ? `
@@ -42,7 +43,9 @@ function reminderRow(note) {
   return `
     <div class="reminder ${note.done ? "done" : ""}">
       <button class="circle" aria-label="${note.done ? "Mark not done" : "Mark done"}" onclick="toggleReminder('${note.id}')"></button>
-      <input class="reminder-text" value="${escapeHtml(note.text)}" onchange="editReminder('${note.id}', this.value)">
+      <textarea class="reminder-text" rows="1" enterkeyhint="done" oninput="fitHeight(this)"
+                onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); }"
+                onchange="editReminder('${note.id}', this.value)">${escapeHtml(note.text)}</textarea>
     </div>`;
 }
 
